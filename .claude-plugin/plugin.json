@@ -1,12 +1,12 @@
 {
-  "name": "claude-code-iterm-notify",
-  "version": "1.0.0",
-  "description": "macOS notifications with sound and voice alerts when Claude Code needs your attention. Identifies iTerm2 sessions by profile name.",
+  "name": "claude-code-notify",
+  "version": "2.0.0",
+  "description": "macOS desktop notifications with sound and voice alerts when Claude Code needs your attention. Works in iTerm2 (with session identification), Claude macOS app, VS Code, and any terminal.",
   "author": {
     "name": "Roberto",
     "email": "robertoecf@gmail.com"
   },
   "repository": "https://github.com/robertoecf/claude-code-iterm-notify",
   "license": "MIT",
-  "keywords": ["notification", "macos", "iterm2", "sound", "alert"]
+  "keywords": ["notification", "macos", "iterm2", "sound", "alert", "desktop", "claude-app"]
 }
