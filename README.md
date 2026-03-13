@@ -19,7 +19,8 @@ The label adapts to your environment:
 | iTerm2 (named profile) | Profile name | "Claude Code 2" |
 | iTerm2 (default profile) | "iTerm2" | "Claude Code iTerm2" |
 | VS Code | "vscode" | "Claude Code vscode" |
-| Claude macOS app | "App" | "Claude Code App" |
+| Claude macOS app (Code) | "App" | "Claude Code App" |
+| Claude macOS app (Cowork) | "Cowork" | "Claude Cowork App" |
 | Other terminals | Terminal name | "Claude Code Apple_Terminal" |
 
 ## Requirements
@@ -116,18 +117,116 @@ Both trigger `notify.sh`, which:
 
 ## Customization
 
-Edit `hooks/scripts/notify.sh` to change:
+Edit `hooks/scripts/notify.sh` (then reinstall or copy to `~/.claude/hooks/notify.sh`) to change any of the options below.
 
-- **Sounds**: Replace `Basso.aiff` / `Submarine.aiff` with any file in `/System/Library/Sounds/`
-  ```bash
-  ls /System/Library/Sounds/  # list available sounds
-  ```
-- **Voice**: Change `-v Zarvox` to another macOS voice
-  ```bash
-  say -v ?  # list all available voices
-  ```
-- **Speech rate**: Adjust `-r 300` (words per minute)
-- **Message**: Change `"Claude Code $label"` to whatever you want
+### Voice
+
+Change `-v Zarvox` in the `say` command to any installed macOS voice.
+
+```bash
+say -v '?'  # list all available voices
+```
+
+**Robotic/novelty voices (recommended for notifications — they stand out):**
+
+| Voice | Style | Try it |
+|---|---|---|
+| `Zarvox` (default) | Classic robot | `say -v Zarvox "Claude Code App"` |
+| `Bad News` | Dramatic, deep | `say -v "Bad News" "Claude Code App"` |
+| `Wobble` | Wobbly, unstable | `say -v Wobble "Claude Code App"` |
+| `Eddy (English (US))` | Modern robot | `say -v "Eddy (English (US))" "Claude Code App"` |
+| `Organ` | Church organ | `say -v Organ "Claude Code App"` |
+| `Reed (English (US))` | Reedy, nasal | `say -v "Reed (English (US))" "Claude Code App"` |
+
+**Other fun voices:**
+
+| Voice | Style | Try it |
+|---|---|---|
+| `Bells` | Bell-like tones | `say -v Bells "Claude Code App"` |
+| `Boing` | Bouncy | `say -v Boing "Claude Code App"` |
+| `Bubbles` | Underwater | `say -v Bubbles "Claude Code App"` |
+| `Cellos` | Musical, deep | `say -v Cellos "Claude Code App"` |
+| `Trinoids` | Alien | `say -v Trinoids "Claude Code App"` |
+| `Whisper` | Quiet whisper | `say -v Whisper "Claude Code App"` |
+| `Jester` | Playful | `say -v Jester "Claude Code App"` |
+| `Superstar` | Enthusiastic | `say -v Superstar "Claude Code App"` |
+
+**Natural voices:**
+
+| Voice | Language | Try it |
+|---|---|---|
+| `Samantha` | English (US) | `say -v Samantha "Claude Code App"` |
+| `Fred` | English (US) | `say -v Fred "Claude Code App"` |
+| `Luciana` | Portuguese (BR) | `say -v Luciana "Claude Code App"` |
+
+> **Tip:** macOS has many more voices available for download. Go to **System Settings > Accessibility > Spoken Content > System Voice > Manage Voices** to install additional voices.
+
+To hear all installed voices:
+```bash
+say -v '?' | while IFS= read -r line; do
+  v=$(echo "$line" | sed 's/ *[a-z_A-Z]*  *#.*//')
+  echo "--- $v ---"
+  say -v "$v" "Claude Code App"
+  sleep 1
+done
+```
+
+### Speech rate
+
+Adjust `-r 300` (words per minute). Default macOS rate is ~175. Higher = faster.
+
+```bash
+say -v Zarvox -r 150 "Claude Code App"  # slower
+say -v Zarvox -r 300 "Claude Code App"  # current (fast)
+say -v Zarvox -r 500 "Claude Code App"  # very fast
+```
+
+### Sounds
+
+Replace `Basso.aiff` (alert) and `Submarine.aiff` (closing) with any macOS system sound.
+
+**Available system sounds:**
+
+| Sound | Style | Try it |
+|---|---|---|
+| `Basso` (default alert) | Deep, attention-grabbing | `afplay /System/Library/Sounds/Basso.aiff` |
+| `Submarine` (default closing) | Subtle, underwater | `afplay /System/Library/Sounds/Submarine.aiff` |
+| `Blow` | Soft blow | `afplay /System/Library/Sounds/Blow.aiff` |
+| `Bottle` | Bottle pop | `afplay /System/Library/Sounds/Bottle.aiff` |
+| `Frog` | Frog croak | `afplay /System/Library/Sounds/Frog.aiff` |
+| `Funk` | Funky alert | `afplay /System/Library/Sounds/Funk.aiff` |
+| `Glass` | Glass tap | `afplay /System/Library/Sounds/Glass.aiff` |
+| `Hero` | Heroic fanfare | `afplay /System/Library/Sounds/Hero.aiff` |
+| `Morse` | Morse code beep | `afplay /System/Library/Sounds/Morse.aiff` |
+| `Ping` | Clean ping | `afplay /System/Library/Sounds/Ping.aiff` |
+| `Pop` | Quick pop | `afplay /System/Library/Sounds/Pop.aiff` |
+| `Purr` | Soft purr | `afplay /System/Library/Sounds/Purr.aiff` |
+| `Sosumi` | Classic Mac alert | `afplay /System/Library/Sounds/Sosumi.aiff` |
+| `Tink` | Light tap | `afplay /System/Library/Sounds/Tink.aiff` |
+
+You can also use any `.aiff`, `.mp3`, or `.wav` file:
+```bash
+afplay /path/to/your/custom-sound.mp3
+```
+
+### Message
+
+Change the `voice_label` values in the script to customize what is spoken:
+
+```bash
+# Examples:
+voice_label="Hey, come back"
+voice_label="Task complete"
+voice_label="Attention needed in session $label"
+```
+
+### Desktop notification
+
+The notification title and message come from the hook JSON. You can change the notification sound in the `terminal-notifier` call:
+
+```bash
+terminal-notifier -title "..." -message "..." -sound "Glass"  # any macOS sound name
+```
 
 ## Troubleshooting
 
@@ -167,7 +266,8 @@ Edit `hooks/scripts/notify.sh` to change:
 | Environment | Notifications | Sound | Session ID |
 |---|---|---|---|
 | iTerm2 | Yes | Yes | Profile name |
-| Claude macOS app | Yes (needs `terminal-notifier`) | Yes | "App" |
+| Claude macOS app (Code) | Yes (needs `terminal-notifier`) | Yes | "App" |
+| Claude macOS app (Cowork) | Yes (needs `terminal-notifier`) | Yes | "Cowork" |
 | VS Code terminal | Yes | Yes | "vscode" |
 | macOS Terminal.app | Yes | Yes | "Apple_Terminal" |
 | Ghostty | Yes | Yes | "ghostty" |
