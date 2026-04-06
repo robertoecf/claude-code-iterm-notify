@@ -59,7 +59,7 @@ payload="$(read_payload "$@")"
 parent_process_tree="$(collect_parent_process_tree)"
 
 parsed="$(
-  PAYLOAD="$payload" TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" PARENT_PROCESS_TREE="$parent_process_tree" safe_python3 - <<'PY'
+  PAYLOAD="$payload" TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" CODEX_IS_COWORK_VALUE="${CODEX_IS_COWORK:-}" CLAUDE_CODE_IS_COWORK_VALUE="${CLAUDE_CODE_IS_COWORK:-}" PARENT_PROCESS_TREE="$parent_process_tree" safe_python3 - <<'PY'
 import json
 import os
 from pathlib import Path
@@ -68,6 +68,8 @@ payload = os.environ.get("PAYLOAD", "").strip()
 term_program = os.environ.get("TERM_PROGRAM_VALUE", "").strip()
 iterm_session = os.environ.get("ITERM_SESSION_VALUE", "").strip()
 parent_process_tree = os.environ.get("PARENT_PROCESS_TREE", "")
+codex_is_cowork = os.environ.get("CODEX_IS_COWORK_VALUE", "")
+claude_code_is_cowork = os.environ.get("CLAUDE_CODE_IS_COWORK_VALUE", "")
 
 event_type = "agent-turn-complete"
 cwd = ""
@@ -115,6 +117,16 @@ def classify(text: str, fallback_event: str):
     # agent-turn-complete is noise - skip these
     if fallback_event == "agent-turn-complete":
         return None, None  # Signal to skip notification
+    # Skip task/todo completed notifications (noise)
+    lower_stripped = stripped.lower()
+    noise_patterns = [
+        "todo", "task", "item", "completed", "done", "checked",
+        "finished", "closed", "resolved", "fixed"
+    ]
+    if any(p in lower_stripped for p in noise_patterns):
+        # Only skip if it looks like a completion notification, not a request
+        if "?" not in stripped and "!" not in stripped:
+            return None, None  # Signal to skip notification
     return "Sua atencao pode ser necessaria", stripped or "Codex precisa da sua atencao."
 
 def is_codex_app_process_tree(tree: str) -> bool:
@@ -150,7 +162,12 @@ def fallback_label():
         return Path(cwd).name or "Codex"
     return "Codex"
 
+# Check for Cowork detection
+is_cowork = codex_is_cowork == "1" or claude_code_is_cowork == "1"
+
 label = fallback_label()
+if is_cowork:
+    label = "Cowork"
 if iterm_session:
     label = "__ITERM__"
 
@@ -160,6 +177,8 @@ if subtitle is None:
     print(json.dumps({"skip": True}))
     exit(0)
 voice_label = "Codex App" if label == "Codex App" else f"Codex {label}"
+if label == "Cowork":
+    voice_label = "Codex Cowork App"
 # If label is too short (like "LC", "CX", etc.), just say "Codex"
 if len(label) <= 3 and label not in ("App",):
     voice_label = "Codex"
@@ -273,6 +292,11 @@ EOF
   else
     voice_label="Codex $label"
   fi
+fi
+
+# Force voice_label to safe value if label is too short (prevents "Codex LC" issues)
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="Codex"
 fi
 
 printf '%s | event=%s | label=%s | subtitle=%s | message=%s\n' \

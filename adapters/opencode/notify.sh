@@ -59,7 +59,7 @@ payload="$(read_payload "$@")"
 parent_process_tree="$(collect_parent_process_tree)"
 
 parsed="$(
-  PAYLOAD="$payload" TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" PARENT_PROCESS_TREE="$parent_process_tree" safe_python3 - <<'PY'
+  PAYLOAD="$payload" TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" CODEX_IS_COWORK_VALUE="${CODEX_IS_COWORK:-}" CLAUDE_CODE_IS_COWORK_VALUE="${CLAUDE_CODE_IS_COWORK:-}" ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" PARENT_PROCESS_TREE="$parent_process_tree" safe_python3 - <<'PY'
 import json
 import os
 from pathlib import Path
@@ -68,6 +68,8 @@ payload = os.environ.get("PAYLOAD", "").strip()
 term_program = os.environ.get("TERM_PROGRAM_VALUE", "").strip()
 iterm_session = os.environ.get("ITERM_SESSION_VALUE", "").strip()
 parent_process_tree = os.environ.get("PARENT_PROCESS_TREE", "")
+codex_is_cowork = os.environ.get("CODEX_IS_COWORK_VALUE", "")
+claude_code_is_cowork = os.environ.get("CLAUDE_CODE_IS_COWORK_VALUE", "")
 
 event_type = "agent-turn-complete"
 cwd = ""
@@ -154,6 +156,10 @@ def fallback_label():
     return "OpenCode"
 
 label = fallback_label()
+# Check for Cowork detection
+is_cowork = codex_is_cowork == "1" or claude_code_is_cowork == "1"
+if is_cowork:
+    label = "Cowork"
 if iterm_session:
     label = "__ITERM__"
 
@@ -163,6 +169,8 @@ if subtitle is None:
     print(json.dumps({"skip": True}))
     exit(0)
 voice_label = "OpenCode App" if label == "OpenCode App" else f"OpenCode {label}"
+if label == "Cowork":
+    voice_label = "OpenCode Cowork App"
 
 print(json.dumps({
     "title": title,
@@ -180,6 +188,11 @@ PY
 if [ "$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin).get("skip", False))' 2>/dev/null)" = "True" ]; then
   echo "$(date '+%Y-%m-%d %H:%M:%S') | SKIP (noise event)" >> "$LOG"
   exit 0
+fi
+
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
 fi
 
 title="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["title"])')"
@@ -207,6 +220,11 @@ if [ -f "$COOLDOWN_FILE" ]; then
   fi
 fi
 
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
+fi
+
 # Save current state for cooldown (before any exit) - use safe_python3 for JSON to avoid injection
 safe_python3 - <<'PY'
 import json
@@ -216,6 +234,11 @@ PY
 
 if [ "$should_notify" = "false" ]; then
   exit 0
+fi
+
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
 fi
 
 if [ "$label" = "__ITERM__" ]; then
@@ -268,6 +291,11 @@ EOF
   fi
 fi
 
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
+fi
+
 printf '%s | event=%s | label=%s | subtitle=%s | message=%s\n' \
   "$(date '+%Y-%m-%d %H:%M:%S')" \
   "$event_type" \
@@ -296,6 +324,11 @@ PY
   exit 0
 fi
 
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
+fi
+
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier \
     -title "$title" \
@@ -306,6 +339,11 @@ if command -v terminal-notifier >/dev/null 2>&1; then
     >/dev/null 2>&1 || true
 else
   osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\" sound name \"Submarine\"" >/dev/null 2>&1 || true
+fi
+
+# Force voice_label to safe value if label is too short
+if [ ${#label} -le 3 ] && [ "$label" != "App" ]; then
+  voice_label="OPENCODE"
 fi
 
 nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Zarvox -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
