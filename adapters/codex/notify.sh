@@ -110,7 +110,7 @@ def classify(text: str, fallback_event: str):
         detail = stripped.split(":", 1)[1].strip() or "Codex precisa de informacao sua para continuar."
         return "Input necessario", detail
     if stripped.startswith("READY_FOR_REVIEW:"):
-        detail = stripped.split(":", 1)[1].strip() or "Codex concluiu o trabalho e aguarda revisao."
+        detail = stripped.split(":", 1)[1].strip() or "Codex concluiou o trabalho e aguarda revisao."
         return "Pronto para revisao", detail
     # agent-turn-complete is noise - skip these
     if fallback_event == "agent-turn-complete":
@@ -160,10 +160,9 @@ if subtitle is None:
     print(json.dumps({"skip": True}))
     exit(0)
 voice_label = "Codex App" if label == "Codex App" else f"Codex {label}"
-# Fix for Codex Desktop App voice being garbled as "LC" or similar
-if voice_label in ("Codex LC", "Codex CL", "Codex CX", "Codex CD") or (label not in ("Codex App", "Ghostty", "iTerm2", "Terminal.app", "VS Code") and "codex" in voice_label.lower() and len(label) <= 3):
-    voice_label = "Codex App"
-    label = "Codex App"
+# If label is too short (like "LC", "CX", etc.), just say "Codex"
+if len(label) <= 3 and label not in ("App",):
+    voice_label = "Codex"
 
 print(json.dumps({
     "title": title,
@@ -189,7 +188,7 @@ message="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.
 label="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
 voice_label="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["voice_label"])')"
 event_type="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["event_type"])')"
-cwd_value="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])') 2>/dev/null || echo \"\""
+cwd_value="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])')"
 
 # Cooldown/deduplication check
 should_notify=true
@@ -208,8 +207,19 @@ if [ -f "$COOLDOWN_FILE" ]; then
   fi
 fi
 
-# Save current state for cooldown (before any exit)
-printf '{"message":"%s","timestamp":%s}' "$message" "$(date +%s)" > "$COOLDOWN_FILE"
+# Save current state for cooldown (before any exit) - use safe_python3 for JSON to avoid injection
+# Pass message via environment to avoid shell injection issues
+export _COOLDOWN_MSG="$message"
+export _COOLDOWN_FILE="$COOLDOWN_FILE"
+export _COOLDOWN_TS="$(date +%s)"
+safe_python3 -c '
+import json
+import os
+msg = os.environ.get("_COOLDOWN_MSG", "")
+ts = int(os.environ.get("_COOLDOWN_TS", "0"))
+with open(os.environ.get("_COOLDOWN_FILE", "/tmp/cooldown.json"), "w") as f:
+    json.dump({"message": msg, "timestamp": ts}, f)
+'
 
 if [ "$should_notify" = "false" ]; then
   exit 0

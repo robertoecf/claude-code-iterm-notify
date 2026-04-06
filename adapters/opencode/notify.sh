@@ -207,8 +207,12 @@ if [ -f "$COOLDOWN_FILE" ]; then
   fi
 fi
 
-# Save current state for cooldown (before any exit)
-printf '{"message":"%s","timestamp":%s}' "$message" "$(date +%s)" > "$COOLDOWN_FILE"
+# Save current state for cooldown (before any exit) - use safe_python3 for JSON to avoid injection
+safe_python3 - <<'PY'
+import json
+with open("$COOLDOWN_FILE", "w") as f:
+    json.dump({"message": """ + '''$message''' + """, "timestamp": $(date +%s)}, f)
+PY
 
 if [ "$should_notify" = "false" ]; then
   exit 0
