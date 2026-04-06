@@ -105,6 +105,7 @@ elif isinstance(data, str) and data.strip():
 
 def classify(text: str, fallback_event: str):
     stripped = text.strip()
+    # Only notify for these 3 cases - everything else is noise
     if stripped.startswith("AUTH_NEEDED:"):
         detail = stripped.split(":", 1)[1].strip() or "OpenCode precisa de autorizacao para continuar."
         return "Autorizacao necessaria", detail

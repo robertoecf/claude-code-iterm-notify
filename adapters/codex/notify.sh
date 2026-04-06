@@ -105,6 +105,7 @@ elif isinstance(data, str) and data.strip():
 
 def classify(text: str, fallback_event: str):
     stripped = text.strip()
+    # Only notify for these 3 cases - everything else is noise
     if stripped.startswith("AUTH_NEEDED:"):
         detail = stripped.split(":", 1)[1].strip() or "Codex precisa de autorizacao para continuar."
         return "Autorizacao necessaria", detail
@@ -112,22 +113,10 @@ def classify(text: str, fallback_event: str):
         detail = stripped.split(":", 1)[1].strip() or "Codex precisa de informacao sua para continuar."
         return "Input necessario", detail
     if stripped.startswith("READY_FOR_REVIEW:"):
-        detail = stripped.split(":", 1)[1].strip() or "Codex concluiou o trabalho e aguarda revisao."
+        detail = stripped.split(":", 1)[1].strip() or "Codex conclutou o trabalho e aguarda revisao."
         return "Pronto para revisao", detail
-    # agent-turn-complete is noise - skip these
-    if fallback_event == "agent-turn-complete":
-        return None, None  # Signal to skip notification
-    # Skip task/todo completed notifications (noise)
-    lower_stripped = stripped.lower()
-    noise_patterns = [
-        "todo", "task", "item", "completed", "done", "checked",
-        "finished", "closed", "resolved", "fixed"
-    ]
-    if any(p in lower_stripped for p in noise_patterns):
-        # Only skip if it looks like a completion notification, not a request
-        if "?" not in stripped and "!" not in stripped:
-            return None, None  # Signal to skip notification
-    return "Sua atencao pode ser necessaria", stripped or "Codex precisa da sua atencao."
+    # Everything else is noise - skip silently
+    return None, None
 
 def is_codex_app_process_tree(tree: str) -> bool:
     haystack = tree.lower()
