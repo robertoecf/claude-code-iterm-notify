@@ -115,9 +115,8 @@ def classify(text: str, fallback_event: str):
     if stripped.startswith("READY_FOR_REVIEW:"):
         detail = stripped.split(":", 1)[1].strip() or "Pi concluiu o trabalho e aguarda revisao."
         return "Pronto para revisao", detail
-    # agent-turn-complete is noise - skip these
-    if fallback_event == "agent-turn-complete":
-        return None, None  # Signal to skip notification
+    # Everything else is noise - skip silently
+    return None, None
 
 def is_pi_app_process_tree(tree: str) -> bool:
     haystack = tree.lower()
@@ -191,11 +190,6 @@ if [ "$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.loa
   exit 0
 fi
 
-# Force voice_label to safe value if label is too short
-if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then
-  voice_label="PI"
-fi
-
 title="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["title"])')"
 subtitle="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
 message="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
@@ -226,12 +220,12 @@ if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then
   voice_label="PI"
 fi
 
-# Save current state for cooldown (before any exit) - use safe_python3 for JSON to avoid injection
-safe_python3 - <<'PY'
-import json
-with open("$COOLDOWN_FILE", "w") as f:
-    json.dump({"message": """ + '''$message''' + """, "timestamp": $(date +%s)}, f)
-PY
+# Save current state for cooldown - use safe_python3 to avoid injection
+_now=$(date +%s)
+export _COOLDOWN_MSG="$message"
+export _COOLDOWN_FILE="$COOLDOWN_FILE"
+export _COOLDOWN_TS="$_now"
+safe_python3 -c 'import json,os; json.dump({"message": os.environ["_COOLDOWN_MSG"], "timestamp": int(os.environ["_COOLDOWN_TS"])}, open(os.environ["_COOLDOWN_FILE"], "w"))'
 
 if [ "$should_notify" = "false" ]; then
   exit 0
