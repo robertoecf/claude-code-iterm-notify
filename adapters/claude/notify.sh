@@ -84,7 +84,7 @@ else
   echo "$(date '+%H:%M:%S') | NOTIFICATION (osascript)" >> "$LOG"
 fi
 
-nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Zarvox -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
+nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Samantha -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
 disown
 echo "$(date '+%H:%M:%S') | SOUND DISPATCHED" >> "$LOG"
 
