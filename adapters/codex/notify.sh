@@ -336,10 +336,22 @@ if command -v terminal-notifier >/dev/null 2>&1; then
     -group "codex-user-attention" \
     >/dev/null 2>&1 || true
 else
-  osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle — $label\" sound name \"Submarine\"" >/dev/null 2>&1 || true
+  # Pass values via env to avoid shell/AppleScript injection from $message.
+  NOTIFY_TITLE="$title" NOTIFY_SUBTITLE="$subtitle — $label" NOTIFY_MESSAGE="$message" \
+    osascript - <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run
+  set theTitle to system attribute "NOTIFY_TITLE"
+  set theSubtitle to system attribute "NOTIFY_SUBTITLE"
+  set theMessage to system attribute "NOTIFY_MESSAGE"
+  display notification theMessage with title theTitle subtitle theSubtitle sound name "Submarine"
+end run
+APPLESCRIPT
 fi
 
-nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Samantha -r 300 \"$voice_label\"" >> "$LOG" 2>&1 &
+# voice_label is built from controlled prefixes + label (which may come from
+# iTerm2 profile names or cwd basenames). Pass via env to avoid injection.
+VOICE_LABEL="$voice_label" LOG_FILE="$LOG" \
+  nohup bash -c 'afplay "/System/Library/Sounds/Basso.aiff" & say -v Samantha -r 300 "$VOICE_LABEL"' >> "$LOG" 2>&1 &
 disown
 
 exit 0

@@ -15,10 +15,9 @@ The repository still ships the original **Claude Code plugin**, and now also inc
 
 When the adapter fires, you get:
 
-1. Desktop notification via `terminal-notifier` when available
+1. Desktop notification via `terminal-notifier` (with `Submarine` sound) when available
 2. Audio alert with `Basso`
 3. Voice announcement with the session label
-4. Closing sound with `Submarine`
 
 The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex terminou no app` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved.
 
