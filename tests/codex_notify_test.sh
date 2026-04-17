@@ -5,6 +5,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_PATH="$ROOT_DIR/adapters/codex/notify.sh"
 INSTALLER_PATH="$ROOT_DIR/adapters/codex/install.sh"
 
+TMP_COOLDOWN="$(mktemp -t codex-notify-test.XXXXXX.json)"
+trap 'rm -f "$TMP_COOLDOWN"' EXIT
+
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
@@ -14,16 +17,24 @@ assert_eq() {
   local actual="$1"
   local expected="$2"
   local label="$3"
-
   if [ "$actual" != "$expected" ]; then
     fail "$label: expected '$expected', got '$actual'"
   fi
 }
 
+field() {
+  local json="$1"
+  local key="$2"
+  printf '%s' "$json" | /usr/bin/python3 -c "import json,sys; print(json.load(sys.stdin)[\"$key\"])"
+}
+
 run_case() {
+  # Each case gets a fresh cooldown file so suppression doesn't leak between tests.
+  : > "$TMP_COOLDOWN"
+  rm -f "$TMP_COOLDOWN"
   local payload="$1"
   shift
-  env NOTIFY_TEST_MODE=1 "$@" "$SCRIPT_PATH" "$payload"
+  env NOTIFY_TEST_MODE=1 CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" "$@" "$SCRIPT_PATH" "$payload"
 }
 
 printf 'Running Codex notify adapter tests...\n'
@@ -36,92 +47,105 @@ if [ ! -x "$INSTALLER_PATH" ]; then
   fail "missing executable Codex installer at $INSTALLER_PATH"
 fi
 
-review_output="$(
+# 1) Standard agent-turn-complete with a short message — full text used as preview.
+short_output="$(
   run_case \
-    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman","last-assistant-message":"READY_FOR_REVIEW: painel pronto","title":"Codex"}' \
+    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman","last-assistant-message":"painel pronto","title":"Codex"}' \
     TERM_PROGRAM=Ghostty
 )"
+assert_eq "$(field "$short_output" subtitle)"    "Turno concluído"   "short subtitle"
+assert_eq "$(field "$short_output" message)"     "painel pronto"     "short message"
+assert_eq "$(field "$short_output" label)"       "Ghostty"           "short label"
+assert_eq "$(field "$short_output" voice_label)" "Codex terminou em Ghostty" "short voice"
 
-review_subtitle="$(printf '%s' "$review_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
-review_message="$(printf '%s' "$review_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
-review_label="$(printf '%s' "$review_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
-review_voice="$(printf '%s' "$review_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["voice_label"])')"
-
-assert_eq "$review_subtitle" "Pronto para revisao" "review subtitle"
-assert_eq "$review_message" "painel pronto" "review message"
-assert_eq "$review_label" "Ghostty" "review label"
-assert_eq "$review_voice" "Codex Ghostty" "review voice"
-
-input_output="$(
+# 2) Long assistant message gets truncated (not read verbatim).
+long_msg="$(printf 'lorem ipsum %.0s' $(seq 1 80))"
+long_output="$(
   run_case \
-    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman","last-assistant-message":"INPUT_NEEDED: informar firm_id","title":"Codex"}' \
+    "{\"type\":\"agent-turn-complete\",\"cwd\":\"/tmp/wealthuman\",\"last-assistant-message\":\"$long_msg\"}" \
     TERM_PROGRAM=Apple_Terminal
 )"
+preview="$(field "$long_output" message)"
+if [ "${#preview}" -ge "${#long_msg}" ]; then
+  fail "long message preview not truncated (len=${#preview})"
+fi
+case "$preview" in
+  *…) ;;
+  *) fail "long preview missing ellipsis: $preview" ;;
+esac
+assert_eq "$(field "$long_output" label)" "Terminal.app" "long label"
 
-input_subtitle="$(printf '%s' "$input_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
-input_message="$(printf '%s' "$input_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
-input_label="$(printf '%s' "$input_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
+# 3) Voice is constant regardless of assistant content — never reads the response.
+assert_eq "$(field "$long_output" voice_label)" "Codex terminou em Terminal.app" "long voice"
 
-assert_eq "$input_subtitle" "Input necessario" "input subtitle"
-assert_eq "$input_message" "informar firm_id" "input message"
-assert_eq "$input_label" "Terminal.app" "input label"
-
-stdin_output="$(
-  env NOTIFY_TEST_MODE=1 TERM_PROGRAM=vscode "$SCRIPT_PATH" \
-    <<< '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman","last-assistant-message":"AUTH_NEEDED: liberar acesso","title":"Codex"}'
-)"
-
-stdin_subtitle="$(printf '%s' "$stdin_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
-stdin_message="$(printf '%s' "$stdin_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
-stdin_label="$(printf '%s' "$stdin_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
-
-assert_eq "$stdin_subtitle" "Autorizacao necessaria" "stdin subtitle"
-assert_eq "$stdin_message" "liberar acesso" "stdin message"
-assert_eq "$stdin_label" "VS Code" "stdin label"
-
-fallback_output="$(
-  env -u TERM_PROGRAM NOTIFY_TEST_MODE=1 "$SCRIPT_PATH" \
-    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"deploy concluido","title":"Codex"}'
-)"
-
-fallback_subtitle="$(printf '%s' "$fallback_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
-fallback_message="$(printf '%s' "$fallback_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
-fallback_label="$(printf '%s' "$fallback_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
-fallback_voice="$(printf '%s' "$fallback_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["voice_label"])')"
-
-assert_eq "$fallback_subtitle" "Turno concluido" "fallback subtitle"
-assert_eq "$fallback_message" "deploy concluido" "fallback message"
-assert_eq "$fallback_label" "wealthuman-os" "fallback label"
-assert_eq "$fallback_voice" "Codex wealthuman-os" "fallback voice"
-
+# 4) Codex App process tree produces the "no app" voice.
 app_output="$(
   env -u TERM_PROGRAM \
     NOTIFY_TEST_MODE=1 \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
     CODEX_NOTIFY_PARENT_PROCESS_TREE="/Applications/Codex.app/Contents/MacOS/Codex" \
     "$SCRIPT_PATH" \
-    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"READY_FOR_REVIEW: app pronto","title":"Codex"}'
+    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"qualquer coisa"}'
 )"
+assert_eq "$(field "$app_output" label)"       "Codex App"          "app label"
+assert_eq "$(field "$app_output" voice_label)" "Codex terminou no app" "app voice"
 
-app_label="$(printf '%s' "$app_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
-app_voice="$(printf '%s' "$app_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["voice_label"])')"
-
-assert_eq "$app_label" "Codex App" "app label"
-assert_eq "$app_voice" "Codex App" "app voice"
-
-terminal_output="$(
-  env -u TERM_PROGRAM NOTIFY_TEST_MODE=1 "$SCRIPT_PATH" \
-    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"READY_FOR_REVIEW: terminal pronto","title":"Codex"}'
+# 5) cwd fallback when no TERM_PROGRAM and no Codex App.
+: > "$TMP_COOLDOWN"
+rm -f "$TMP_COOLDOWN"
+fallback_output="$(
+  env -u TERM_PROGRAM \
+    NOTIFY_TEST_MODE=1 \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
+    "$SCRIPT_PATH" \
+    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"deploy concluido"}'
 )"
+assert_eq "$(field "$fallback_output" label)"       "wealthuman-os"              "fallback label"
+assert_eq "$(field "$fallback_output" voice_label)" "Codex terminou em wealthuman-os" "fallback voice"
 
-terminal_label="$(printf '%s' "$terminal_output" | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
+# 6) Short label (<4 chars) falls back to plain "Codex terminou".
+: > "$TMP_COOLDOWN"
+rm -f "$TMP_COOLDOWN"
+short_label_output="$(
+  env -u TERM_PROGRAM \
+    NOTIFY_TEST_MODE=1 \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
+    "$SCRIPT_PATH" \
+    '{"type":"agent-turn-complete","cwd":"/tmp/lc","last-assistant-message":"x"}'
+)"
+assert_eq "$(field "$short_label_output" voice_label)" "Codex terminou" "short label voice"
 
-assert_eq "$terminal_label" "wealthuman-os" "terminal fallback label"
+# 7) Cowork env triggers the Cowork voice.
+: > "$TMP_COOLDOWN"
+rm -f "$TMP_COOLDOWN"
+cowork_output="$(
+  env -u TERM_PROGRAM \
+    NOTIFY_TEST_MODE=1 \
+    CODEX_IS_COWORK=1 \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
+    "$SCRIPT_PATH" \
+    '{"type":"agent-turn-complete","cwd":"/tmp/cw","last-assistant-message":"ok"}'
+)"
+assert_eq "$(field "$cowork_output" label)"       "Cowork"                   "cowork label"
+assert_eq "$(field "$cowork_output" voice_label)" "Codex terminou no Cowork" "cowork voice"
 
+# 8) Installer prints the expected notify line.
 config_output="$("$INSTALLER_PATH" --print-config "/tmp/codex-notify.sh")"
 expected_line='notify = ["/tmp/codex-notify.sh"]'
-
 if ! printf '%s\n' "$config_output" | grep -Fqx "$expected_line"; then
   fail "installer config output missing notify line"
+fi
+
+# 9) Unsupported future event types are skipped cleanly (no stdout in test mode).
+: > "$TMP_COOLDOWN"
+rm -f "$TMP_COOLDOWN"
+skip_output="$(
+  env NOTIFY_TEST_MODE=1 CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
+    "$SCRIPT_PATH" \
+    '{"type":"some-future-event","cwd":"/tmp/x","last-assistant-message":"ignored"}' || true
+)"
+if [ -n "$skip_output" ]; then
+  fail "unsupported event should produce no test output, got: $skip_output"
 fi
 
 printf 'PASS: Codex notify adapter tests\n'

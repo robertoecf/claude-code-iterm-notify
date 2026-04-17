@@ -29,7 +29,7 @@ install_script() {
 
 self_test() {
   local target="${1:-$SOURCE_SCRIPT}"
-  NOTIFY_TEST_MODE=1 "$target" '{"type":"agent-turn-complete","cwd":"/tmp/example","last-assistant-message":"READY_FOR_REVIEW: notifier pronto","title":"Codex"}'
+  NOTIFY_TEST_MODE=1 "$target" '{"type":"agent-turn-complete","cwd":"/tmp/example","last-assistant-message":"notifier pronto"}'
 }
 
 command_name="${1:-}"

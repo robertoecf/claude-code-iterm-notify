@@ -15,12 +15,11 @@ The repository still ships the original **Claude Code plugin**, and now also inc
 
 When the adapter fires, you get:
 
-1. Desktop notification via `terminal-notifier` when available
+1. Desktop notification via `terminal-notifier` (with `Submarine` sound) when available
 2. Audio alert with `Basso`
 3. Voice announcement with the session label
-4. Closing sound with `Submarine`
 
-The spoken label is environment-specific. For Codex, the voice uses `Codex {label}`. For Claude, the existing `Claude Code {label}` behavior is preserved.
+The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex terminou no app` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved.
 
 ## Requirements
 
@@ -107,19 +106,46 @@ Or invoke the repository script directly:
 
 ```bash
 NOTIFY_TEST_MODE=1 bash adapters/codex/notify.sh \
-  '{"type":"agent-turn-complete","cwd":"/tmp/example","last-assistant-message":"READY_FOR_REVIEW: notifier pronto","title":"Codex"}'
+  '{"type":"agent-turn-complete","cwd":"/tmp/example","last-assistant-message":"notifier pronto"}'
 ```
 
-### What the Codex adapter classifies
+### What the Codex adapter does (and what it cannot do)
 
-Codex `notify` is best-effort and follows Codex's own signals, not Claude's hook model.
+Codex exposes exactly one event to the `notify` hook: `agent-turn-complete`. Approval requests, input requests, exec-approval, and patch-approval events all travel on different channels and never reach this script — see [openai/codex#11808](https://github.com/openai/codex/issues/11808) and [protocol source](https://github.com/openai/codex/blob/main/codex-rs/protocol/src/protocol.rs).
 
-The adapter maps the final agent message like this:
+So the adapter is deliberately minimal:
 
-- `READY_FOR_REVIEW:` → `Pronto para revisao`
-- `INPUT_NEEDED:` → `Input necessario`
-- `AUTH_NEEDED:` → `Autorizacao necessaria`
-- anything else on `agent-turn-complete` → `Turno concluido`
+- On every `agent-turn-complete`, it fires a short voice announcement `Codex terminou em <label>` (or `Codex terminou no app` for the Codex macOS App).
+- The desktop notification shows the first ~160 characters of the last assistant message as a preview.
+- Identical events within 30 s (same label+message) are suppressed via a cooldown file.
+- The adapter does **not** read the assistant response aloud — that was the source of noise. Glance at the notification or the terminal/app for the actual content.
+
+### Getting alerts for approval / input (not `notify`)
+
+Because Codex does not send those signals to the `notify` hook, use the right layer for each environment:
+
+**Codex macOS App** — enable approval-request notifications in the app preferences. The app delivers them natively through macOS notifications.
+
+**Codex CLI (TUI)** — add to `~/.codex/config.toml`:
+
+```toml
+[tui]
+notifications = ["agent-turn-complete", "approval-requested"]
+notification_method = "osc9"
+```
+
+The terminal (iTerm2, Ghostty, Terminal.app) then emits native desktop notifications via OSC 9 when Codex asks for approval. See [Advanced configuration](https://developers.openai.com/codex/config-advanced).
+
+**Fully custom behavior** — the only way to react to every `EventMsg` in the adapter itself is to consume Codex as an MCP server (`codex mcp`) instead of via the one-shot `notify` hook. That is out of scope for this repo today.
+
+### Tunables
+
+| Environment variable | Default | Purpose |
+|---|---|---|
+| `CODEX_NOTIFY_LOG` | `/tmp/codex-notify-debug.log` | Debug log path |
+| `CODEX_NOTIFY_COOLDOWN_FILE` | `/tmp/codex-notify-last.json` | Dedup state file |
+| `CODEX_NOTIFY_COOLDOWN_SECONDS` | `30` | Window for suppressing identical events |
+| `CODEX_NOTIFY_PREVIEW_CHARS` | `160` | Desktop notification preview length |
 
 ### Session label strategy
 

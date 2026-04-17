@@ -1,10 +1,30 @@
 #!/bin/bash
+# Codex `notify` hook adapter.
+#
+# Codex invokes this script (configured as `notify = [...]` in ~/.codex/config.toml)
+# ONLY for the `agent-turn-complete` event. There is no approval/input event on
+# this channel today — see https://github.com/openai/codex/issues/11808.
+#
+# So this script does one thing: when Codex finishes a turn, emit a short voice
+# announcement "Codex terminou em <label>" plus a desktop notification with a
+# truncated preview of the last assistant message. It does NOT read the full
+# response aloud.
+#
+# For approval/input alerts:
+#   - Codex macOS App: enable approval notifications in the app preferences.
+#   - Codex CLI (TUI):   add to ~/.codex/config.toml:
+#       [tui]
+#       notifications = ["agent-turn-complete", "approval-requested"]
+#       notification_method = "osc9"
+#     The terminal (iTerm2, Ghostty, …) then shows native desktop notifications
+#     for approval requests directly.
 set -euo pipefail
 
 LOG="${CODEX_NOTIFY_LOG:-/tmp/codex-notify-debug.log}"
 SAFE_CWD="${CODEX_NOTIFY_SAFE_CWD:-${TMPDIR:-/tmp}}"
 COOLDOWN_FILE="${CODEX_NOTIFY_COOLDOWN_FILE:-/tmp/codex-notify-last.json}"
-COOLDOWN_SECONDS="${CODEX_NOTIFY_COOLDOWN_SECONDS:-60}"
+COOLDOWN_SECONDS="${CODEX_NOTIFY_COOLDOWN_SECONDS:-30}"
+MESSAGE_PREVIEW_CHARS="${CODEX_NOTIFY_PREVIEW_CHARS:-160}"
 
 safe_python3() {
   (
@@ -59,7 +79,14 @@ payload="$(read_payload "$@")"
 parent_process_tree="$(collect_parent_process_tree)"
 
 parsed="$(
-  PAYLOAD="$payload" TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" CODEX_IS_COWORK_VALUE="${CODEX_IS_COWORK:-}" CLAUDE_CODE_IS_COWORK_VALUE="${CLAUDE_CODE_IS_COWORK:-}" PARENT_PROCESS_TREE="$parent_process_tree" safe_python3 - <<'PY'
+  PAYLOAD="$payload" \
+  TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" \
+  ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" \
+  CODEX_IS_COWORK_VALUE="${CODEX_IS_COWORK:-}" \
+  CLAUDE_CODE_IS_COWORK_VALUE="${CLAUDE_CODE_IS_COWORK:-}" \
+  PARENT_PROCESS_TREE="$parent_process_tree" \
+  PREVIEW_CHARS="$MESSAGE_PREVIEW_CHARS" \
+  safe_python3 - <<'PY'
 import json
 import os
 from pathlib import Path
@@ -70,53 +97,44 @@ iterm_session = os.environ.get("ITERM_SESSION_VALUE", "").strip()
 parent_process_tree = os.environ.get("PARENT_PROCESS_TREE", "")
 codex_is_cowork = os.environ.get("CODEX_IS_COWORK_VALUE", "")
 claude_code_is_cowork = os.environ.get("CLAUDE_CODE_IS_COWORK_VALUE", "")
+try:
+    preview_chars = max(40, int(os.environ.get("PREVIEW_CHARS", "160")))
+except ValueError:
+    preview_chars = 160
 
+# Per https://developers.openai.com/codex/config-advanced, Codex passes a JSON
+# argument with these documented fields:
+#   type (always "agent-turn-complete" today), thread-id, turn-id, cwd,
+#   input-messages, last-assistant-message
 event_type = "agent-turn-complete"
 cwd = ""
-title = "Codex"
-raw_message = ""
+assistant_msg = ""
 
 try:
     data = json.loads(payload) if payload else {}
 except Exception:
     data = {}
-    raw_message = payload
+    assistant_msg = payload
 
 if isinstance(data, dict):
     event_type = str(data.get("type") or "agent-turn-complete").strip() or "agent-turn-complete"
     cwd = str(data.get("cwd") or "").strip()
-    title = str(data.get("title") or title).strip() or "Codex"
-    for key in (
-        "last-assistant-message",
-        "last_assistant_message",
-        "last-agent-message",
-        "last_agent_message",
-        "message",
-        "body",
-        "prompt",
-        "reason",
-    ):
+    for key in ("last-assistant-message", "last_assistant_message"):
         value = data.get(key)
         if isinstance(value, str) and value.strip():
-            raw_message = value.strip()
+            assistant_msg = value.strip()
             break
 elif isinstance(data, str) and data.strip():
-    raw_message = data.strip()
+    assistant_msg = data.strip()
 
-def classify(text: str, fallback_event: str):
-    stripped = text.strip()
-    # Only notify for these 3 cases - everything else is noise
-    if stripped.startswith("AUTH_NEEDED:"):
-        detail = stripped.split(":", 1)[1].strip() or "Codex precisa de autorizacao para continuar."
-        return "Autorizacao necessaria", detail
-    if stripped.startswith("INPUT_NEEDED:"):
-        detail = stripped.split(":", 1)[1].strip() or "Codex precisa de informacao sua para continuar."
-        return "Input necessario", detail
-    if stripped.startswith("READY_FOR_REVIEW:"):
-        detail = stripped.split(":", 1)[1].strip() or "Codex conclutou o trabalho e aguarda revisao."
-        return "Pronto para revisao", detail
-    # Everything else is noise - skip silently
-    return None, None
+
+def truncate(text: str, limit: int) -> str:
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0]
+    return (cut or text[:limit]).rstrip() + "…"
+
 
 def is_codex_app_process_tree(tree: str) -> bool:
     haystack = tree.lower()
@@ -125,6 +143,7 @@ def is_codex_app_process_tree(tree: str) -> bool:
         or "/applications/codex.app/contents/resources/codex app-server" in haystack
         or "com.openai.codex" in haystack
     )
+
 
 def normalized_term_program(value: str) -> str:
     normalized = value.strip()
@@ -141,7 +160,8 @@ def normalized_term_program(value: str) -> str:
         return "VS Code"
     return normalized
 
-def fallback_label():
+
+def fallback_label() -> str:
     if is_codex_app_process_tree(parent_process_tree):
         return "Codex App"
     normalized_term = normalized_term_program(term_program)
@@ -151,88 +171,56 @@ def fallback_label():
         return Path(cwd).name or "Codex"
     return "Codex"
 
-# Check for Cowork detection
-is_cowork = codex_is_cowork == "1" or claude_code_is_cowork == "1"
 
+is_cowork = codex_is_cowork == "1" or claude_code_is_cowork == "1"
 label = fallback_label()
 if is_cowork:
     label = "Cowork"
 if iterm_session:
     label = "__ITERM__"
 
-subtitle, message = classify(raw_message, event_type)
-# Skip if classify returned None (e.g., agent-turn-complete filtered out)
-if subtitle is None:
-    print(json.dumps({"skip": True}))
-    exit(0)
-voice_label = "Codex App" if label == "Codex App" else f"Codex {label}"
-if label == "Cowork":
-    voice_label = "Codex Cowork App"
-# If label is too short (like "LC", "CX", etc.), just say "Codex"
-if len(label) <= 3 and label not in ("App",):
-    voice_label = "Codex"
+message_preview = truncate(assistant_msg, preview_chars) if assistant_msg else "Codex concluiu um turno."
+subtitle = "Turno concluído"
 
-print(json.dumps({
-    "title": title,
-    "subtitle": subtitle,
-    "message": message,
-    "label": label,
-    "voice_label": voice_label,
-    "event_type": event_type,
-    "cwd": cwd,
-}))
+print(
+    json.dumps(
+        {
+            "title": "Codex",
+            "subtitle": subtitle,
+            "message": message_preview,
+            "full_msg": assistant_msg,
+            "label": label,
+            "event_type": event_type,
+            "cwd": cwd,
+        }
+    )
+)
 PY
 )"
 
-# Check if this notification should be skipped (e.g., agent-turn-complete)
-if [ "$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin).get("skip", False))' 2>/dev/null)" = "True" ]; then
-  echo "$(date '+%Y-%m-%d %H:%M:%S') | SKIP (noise event)" >> "$LOG"
+# Extract all fields in a single python3 call (instead of 6 separate forks).
+eval "$(PARSED_JSON="$parsed" safe_python3 - <<'EXTRACT'
+import json, os, shlex
+d = json.loads(os.environ["PARSED_JSON"])
+mapping = [
+    ("title", "title"), ("subtitle", "subtitle"), ("message", "message"),
+    ("full_msg", "full_msg"), ("label", "label"), ("event_type", "event_type"),
+    ("cwd_value", "cwd"),
+]
+for shell_name, json_key in mapping:
+    val = shlex.quote(d.get(json_key, ""))
+    print("%s=%s" % (shell_name, val))
+EXTRACT
+)"
+
+# Ignore events we don't handle today. `agent-turn-complete` is the only one
+# Codex emits right now, but guard against future additions.
+if [ "$event_type" != "agent-turn-complete" ]; then
+  echo "$(date '+%Y-%m-%d %H:%M:%S') | SKIP unsupported event=$event_type" >> "$LOG"
   exit 0
 fi
 
-title="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["title"])')"
-subtitle="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["subtitle"])')"
-message="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["message"])')"
-label="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["label"])')"
-voice_label="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["voice_label"])')"
-event_type="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["event_type"])')"
-cwd_value="$(printf '%s' "$parsed" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin)["cwd"])')"
-
-# Cooldown/deduplication check
-should_notify=true
-if [ -f "$COOLDOWN_FILE" ]; then
-  last_data="$(cat "$COOLDOWN_FILE" 2>/dev/null || echo '{}')"
-  last_msg="$(printf '%s' "$last_data" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin).get("message",""))' 2>/dev/null || echo "")"
-  last_time="$(printf '%s' "$last_data" | safe_python3 -c 'import json,sys; print(json.load(sys.stdin).get("timestamp",0))' 2>/dev/null || echo "0")"
-  
-  if [ "$message" = "$last_msg" ]; then
-    now="$(date +%s)"
-    elapsed=$((now - last_time))
-    if [ "$elapsed" -lt "$COOLDOWN_SECONDS" ]; then
-      echo "$(date '+%Y-%m-%d %H:%M:%S') | COOLDOWN skip (msg same, ${elapsed}s < ${COOLDOWN_SECONDS}s)" >> "$LOG"
-      should_notify=false
-    fi
-  fi
-fi
-
-# Save current state for cooldown (before any exit) - use safe_python3 for JSON to avoid injection
-# Pass message via environment to avoid shell injection issues
-export _COOLDOWN_MSG="$message"
-export _COOLDOWN_FILE="$COOLDOWN_FILE"
-export _COOLDOWN_TS="$(date +%s)"
-safe_python3 -c '
-import json
-import os
-msg = os.environ.get("_COOLDOWN_MSG", "")
-ts = int(os.environ.get("_COOLDOWN_TS", "0"))
-with open(os.environ.get("_COOLDOWN_FILE", "/tmp/cooldown.json"), "w") as f:
-    json.dump({"message": msg, "timestamp": ts}, f)
-'
-
-if [ "$should_notify" = "false" ]; then
-  exit 0
-fi
-
+# Resolve iTerm2 profile name when we have a session id.
 if [ "$label" = "__ITERM__" ]; then
   session_guid="$(echo "${ITERM_SESSION_ID:-}" | cut -d: -f2)"
   resolved="$(
@@ -255,51 +243,85 @@ EOF
     label="$resolved"
   elif [ -n "${TERM_PROGRAM:-}" ]; then
     case "${TERM_PROGRAM}" in
-      ghostty|Ghostty)
-        label="Ghostty"
-        ;;
-      iTerm.app|iTerm2)
-        label="iTerm2"
-        ;;
-      Apple_Terminal|Terminal|Terminal.app)
-        label="Terminal.app"
-        ;;
-      vscode|"Visual Studio Code")
-        label="VS Code"
-        ;;
-      *)
-        label="$TERM_PROGRAM"
-        ;;
+      ghostty|Ghostty) label="Ghostty" ;;
+      iTerm.app|iTerm2) label="iTerm2" ;;
+      Apple_Terminal|Terminal|Terminal.app) label="Terminal.app" ;;
+      vscode|"Visual Studio Code") label="VS Code" ;;
+      *) label="$TERM_PROGRAM" ;;
     esac
   elif [ -n "$cwd_value" ]; then
     label="$(basename "$cwd_value")"
   else
     label="Codex"
   fi
-  if [ "$label" = "Codex App" ]; then
-    voice_label="Codex App"
-  else
-    voice_label="Codex $label"
-  fi
 fi
 
-# Force voice_label to safe value if label is too short (prevents "Codex LC" issues)
-if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then
-  voice_label="Codex"
+# Short, fixed voice message. We do NOT read the assistant response aloud —
+# that was the source of noise. The user can glance at the desktop
+# notification or the terminal/app for the actual content.
+case "$label" in
+  "Codex App") voice_label="Codex terminou no app" ;;
+  "Cowork")    voice_label="Codex terminou no Cowork" ;;
+  *)
+    if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then
+      voice_label="Codex terminou"
+    else
+      voice_label="Codex terminou em $label"
+    fi
+    ;;
+esac
+
+# Cooldown: suppress identical events within the window. Keyed on
+# (label, full_assistant_msg) — NOT the truncated preview — so two distinct
+# long messages that share the same first 160 chars are still distinguishable.
+#
+# Sliding-window semantics: the timestamp is always refreshed, even when
+# suppressed. This means a steady stream of identical events keeps extending
+# the suppression. That is intentional: if Codex fires the same turn-complete
+# ten times in a row, the user only needs one notification. A new *distinct*
+# message resets the window immediately.
+# Hash the key so the full assistant message is never persisted to disk.
+cooldown_key="$(printf '%s' "${label}::${full_msg}" | shasum -a 256 | cut -d' ' -f1)"
+export _COOLDOWN_FILE="$COOLDOWN_FILE"
+export _COOLDOWN_KEY="$cooldown_key"
+export _COOLDOWN_WINDOW="$COOLDOWN_SECONDS"
+if ! safe_python3 - <<'PY'
+import json, os, sys, time
+
+path = os.environ["_COOLDOWN_FILE"]
+key = os.environ["_COOLDOWN_KEY"]
+window = int(os.environ["_COOLDOWN_WINDOW"])
+now = int(time.time())
+
+# Check existing state.
+suppressed = False
+try:
+    with open(path) as f:
+        data = json.load(f)
+    if data.get("key") == key and now - int(data.get("timestamp", 0)) < window:
+        suppressed = True
+except Exception:
+    pass
+
+# Always persist current state so rapid retries stay suppressed.
+with open(path, "w") as f:
+    json.dump({"key": key, "timestamp": now}, f)
+
+sys.exit(1 if suppressed else 0)
+PY
+then
+  echo "$(date '+%Y-%m-%d %H:%M:%S') | COOLDOWN skip label=$label" >> "$LOG"
+  should_notify=false
+else
+  should_notify=true
 fi
 
-printf '%s | event=%s | label=%s | subtitle=%s | message=%s\n' \
-  "$(date '+%Y-%m-%d %H:%M:%S')" \
-  "$event_type" \
-  "$label" \
-  "$subtitle" \
-  "$message" >> "$LOG"
+printf '%s | event=%s | label=%s | voice=%s | preview=%s\n' \
+  "$(date '+%Y-%m-%d %H:%M:%S')" "$event_type" "$label" "$voice_label" "$message" >> "$LOG"
 
 if [ "${NOTIFY_TEST_MODE:-0}" = "1" ]; then
   TITLE="$title" SUBTITLE="$subtitle" MESSAGE="$message" LABEL="$label" VOICE_LABEL="$voice_label" EVENT_TYPE="$event_type" safe_python3 - <<'PY'
-import json
-import os
-
+import json, os
 print(
     json.dumps(
         {
@@ -316,20 +338,37 @@ PY
   exit 0
 fi
 
+if [ "$should_notify" = "false" ]; then
+  exit 0
+fi
+
 if command -v terminal-notifier >/dev/null 2>&1; then
   terminal-notifier \
     -title "$title" \
-    -subtitle "$subtitle" \
+    -subtitle "$subtitle — $label" \
     -message "$message" \
     -sound "Submarine" \
     -group "codex-user-attention" \
     >/dev/null 2>&1 || true
 else
-  osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\" sound name \"Submarine\"" >/dev/null 2>&1 || true
+  # Pass values via env to avoid shell/AppleScript injection from $message.
+  NOTIFY_TITLE="$title" NOTIFY_SUBTITLE="$subtitle — $label" NOTIFY_MESSAGE="$message" \
+    osascript - <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run
+  set theTitle to system attribute "NOTIFY_TITLE"
+  set theSubtitle to system attribute "NOTIFY_SUBTITLE"
+  set theMessage to system attribute "NOTIFY_MESSAGE"
+  display notification theMessage with title theTitle subtitle theSubtitle sound name "Submarine"
+end run
+APPLESCRIPT
 fi
 
-printf "%s | VOICE: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$voice_label" >> "$LOG"
-nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Samantha -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
+# Run voice in a background subshell. Using ( ... ) & instead of bash -c "..."
+# avoids quoting hazards — $voice_label is passed as a real argv entry.
+(
+  afplay "/System/Library/Sounds/Basso.aiff" &
+  say -v Samantha -r 300 -- "$voice_label"
+) >> "$LOG" 2>&1 &
 disown
 
 exit 0
