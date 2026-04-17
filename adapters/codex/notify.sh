@@ -280,7 +280,8 @@ esac
 # the suppression. That is intentional: if Codex fires the same turn-complete
 # ten times in a row, the user only needs one notification. A new *distinct*
 # message resets the window immediately.
-cooldown_key="${label}::${full_msg}"
+# Hash the key so the full assistant message is never persisted to disk.
+cooldown_key="$(printf '%s' "${label}::${full_msg}" | shasum -a 256 | cut -d' ' -f1)"
 export _COOLDOWN_FILE="$COOLDOWN_FILE"
 export _COOLDOWN_KEY="$cooldown_key"
 export _COOLDOWN_WINDOW="$COOLDOWN_SECONDS"
