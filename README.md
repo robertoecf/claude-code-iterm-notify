@@ -48,11 +48,12 @@ python3 web/notify_ui.py --open
 Then use `http://127.0.0.1:8765` to choose. The UI is a compact light-mode-only dashboard with an N64 gray-first retro palette; numeric/status values use JetBrains Mono when available, with system fallbacks. It does not import external CSS or art assets.
 
 - spoken text templates for app and CLI contexts
-- macOS `say` voice
+- searchable macOS `say` voice, with a Play/Stop sample that says `Agentic Coding Notify`
 - `say -r` speech rate
-- notification sound
-- start and end sounds played with `afplay`
-- sound samples: changing a sound field plays a sample automatically, and each sound field has a single Play/Stop toggle control
+- searchable notification sound
+- searchable start and end sounds played with `afplay`
+- sound samples: changing a sound field plays a sample automatically, and voice/sound fields each have a single Play/Stop toggle control
+- searchable list fields for voice, sounds, and service
 - disclosure guidance: app sessions do not need terminal labels; CLI sessions can use short tab/profile labels like `One`, `Two`, or `Three` because the adapter already detects the service
 
 Preferences are saved to:

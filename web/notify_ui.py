@@ -67,7 +67,7 @@ HTML = r"""
       --accent-2: var(--n64-green);
       --warn: var(--n64-yellow);
       --danger: var(--n64-red);
-      --shadow: 0 22px 58px rgba(74, 70, 63, .20);
+      --shadow: 0 18px 0 rgba(109,105,98,.18), 0 30px 64px rgba(74, 70, 63, .18);
       font-family: var(--font-ui);
     }
     * { box-sizing: border-box; }
@@ -78,7 +78,7 @@ HTML = r"""
         radial-gradient(circle at 12% 4%, rgba(47, 104, 216, .14), transparent 29%),
         radial-gradient(circle at 90% 8%, rgba(47, 175, 101, .13), transparent 26%),
         radial-gradient(circle at 82% 84%, rgba(221, 63, 70, .10), transparent 30%),
-        linear-gradient(145deg, #d6d2c8 0%, var(--n64-cream) 43%, #c6c1b6 100%);
+        linear-gradient(145deg, #d1cdc3 0%, var(--n64-cream) 40%, #bdb8ad 100%);
       color: var(--text);
       font-family: var(--font-ui);
       letter-spacing: -.01em;
@@ -120,9 +120,10 @@ HTML = r"""
       border: 1px solid transparent;
       border-radius: 22px;
       padding: 20px;
-      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.78);
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.78), inset 0 -1px 0 rgba(109,105,98,.16);
       backdrop-filter: blur(18px);
     }
+    .card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--n64-gray-dark), var(--n64-blue), var(--n64-green), var(--n64-yellow), var(--n64-red)); opacity: .72; }
     .card::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
     .full { grid-column: 1 / -1; }
     h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 16px; letter-spacing: -.025em; color: #302c26; }
@@ -142,6 +143,7 @@ HTML = r"""
       transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
     }
     input:focus, select:focus, textarea:focus { border-color: rgba(47, 104, 216, .64); box-shadow: 0 0 0 3px rgba(47, 104, 216, .13), 0 0 18px rgba(241, 191, 40, .18); background: #fffdf7; }
+    input[list] { padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, var(--n64-gray-dark) 50%), linear-gradient(135deg, var(--n64-gray-dark) 50%, transparent 50%); background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
     textarea { min-height: 92px; resize: vertical; }
     input[type="range"] { padding: 0; accent-color: var(--n64-blue); }
     .row { display: flex; gap: 10px; align-items: start; }
@@ -214,7 +216,16 @@ HTML = r"""
     <section class="card">
       <h2><span class="section-index">01</span>Voice</h2>
       <label for="voice">Voice</label>
-      <select id="voice"></select>
+      <div class="sound-row">
+        <input id="voice" list="voice_options" autocomplete="off" placeholder="Type to filter voices" />
+        <datalist id="voice_options"></datalist>
+        <button id="voice_toggle" class="icon-button play" title="Play voice sample" aria-label="Play voice sample" onclick="toggleVoice()">
+          <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+          <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+          <span class="sr-only">Play</span>
+        </button>
+      </div>
+      <p class="hint">Voice samples say <code>Agentic Coding Notify</code>.</p>
 
       <label for="rate">Speech rate <span id="rateLabel"></span></label>
       <input id="rate" type="range" min="80" max="420" step="5" />
@@ -225,7 +236,8 @@ HTML = r"""
       <h2><span class="section-index">02</span>Sounds</h2>
       <label for="notification_sound">Notification sound</label>
       <div class="sound-row">
-        <select id="notification_sound"></select>
+        <input id="notification_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
+        <datalist id="sound_options"></datalist>
         <button id="notification_sound_toggle" class="icon-button play" title="Play notification sample" aria-label="Play notification sample" onclick="toggleSound('notification_sound')">
           <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
           <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
@@ -237,7 +249,7 @@ HTML = r"""
         <div>
           <label for="start_sound">Start sound</label>
           <div class="sound-row">
-            <select id="start_sound"></select>
+            <input id="start_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
             <button id="start_sound_toggle" class="icon-button play" title="Play start sample" aria-label="Play start sample" onclick="toggleSound('start_sound')">
               <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
               <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
@@ -248,7 +260,7 @@ HTML = r"""
         <div>
           <label for="end_sound">End sound</label>
           <div class="sound-row">
-            <select id="end_sound"></select>
+            <input id="end_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
             <button id="end_sound_toggle" class="icon-button play" title="Play end sample" aria-label="Play end sample" onclick="toggleSound('end_sound')">
               <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
               <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
@@ -294,14 +306,8 @@ HTML = r"""
       <div class="grid">
         <div>
           <label for="service">Service</label>
-          <select id="service">
-            <option>Claude App</option>
-            <option>Codex App</option>
-            <option>Claude CLI</option>
-            <option>Codex CLI</option>
-            <option>OpenCode CLI</option>
-            <option>Pi CLI</option>
-          </select>
+          <input id="service" list="service_options" autocomplete="off" value="Claude App" placeholder="Type to filter services" />
+          <datalist id="service_options"></datalist>
         </div>
         <div>
           <label for="label">CLI tab/profile label</label>
@@ -333,6 +339,8 @@ HTML = r"""
 <script>
 const fields = ["voice", "rate", "notification_sound", "start_sound", "end_sound", "app_voice_text_template", "cli_voice_text_template", "voice_text_template"];
 const soundFields = ["notification_sound", "start_sound", "end_sound"];
+const serviceOptions = ["Claude App", "Codex App", "Claude CLI", "Codex CLI", "OpenCode CLI", "Pi CLI"];
+const voiceSampleText = "Agentic Coding Notify";
 let options = { voices: [], sounds: [] };
 let isLoading = true;
 let sampleState = {};
@@ -355,11 +363,14 @@ function currentConfig() {
   for (const f of fields) cfg[f] = $(f).value;
   return cfg;
 }
-function fillSelect(id, values, includeNone = false) {
+function fillDatalist(id, values) {
   const el = $(id);
   el.innerHTML = "";
-  if (includeNone) el.appendChild(new Option("None", "none"));
-  for (const value of values) el.appendChild(new Option(value, value));
+  for (const value of values) {
+    const option = document.createElement("option");
+    option.value = value;
+    el.appendChild(option);
+  }
 }
 function setConfig(cfg) {
   isLoading = true;
@@ -411,10 +422,9 @@ function applyClassicPreset() {
 }
 async function load() {
   options = await (await fetch("/api/options")).json();
-  fillSelect("voice", options.voices);
-  fillSelect("notification_sound", options.sounds);
-  fillSelect("start_sound", options.sounds, true);
-  fillSelect("end_sound", options.sounds, true);
+  fillDatalist("voice_options", options.voices);
+  fillDatalist("sound_options", ["none", ...options.sounds]);
+  fillDatalist("service_options", serviceOptions);
   $("configPath").textContent = options.config_path;
   const cfg = await (await fetch("/api/config")).json();
   setConfig(cfg);
@@ -445,7 +455,30 @@ async function stopAllSounds() {
   const res = await fetch("/api/stop-sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ field: "all" }) });
   const payload = await res.json();
   status(payload);
-  for (const field of soundFields) setSoundPlaying(field, false);
+  for (const field of ["voice", ...soundFields]) setSoundPlaying(field, false);
+}
+async function playVoice() {
+  const res = await fetch("/api/play-voice", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ field: "voice", voice: $("voice").value, rate: $("rate").value, text: voiceSampleText })
+  });
+  const payload = await res.json();
+  status(payload);
+  if (payload.ok) setSoundPlaying("voice", true);
+}
+async function stopVoice() {
+  const res = await fetch("/api/stop-voice", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ field: "voice" }) });
+  const payload = await res.json();
+  status(payload);
+  setSoundPlaying("voice", false);
+}
+async function toggleVoice() {
+  if (sampleState.voice) {
+    await stopVoice();
+  } else {
+    await playVoice();
+  }
 }
 async function toggleSound(field) {
   if (sampleState[field]) {
@@ -463,7 +496,8 @@ function setSoundPlaying(field, playing) {
   const button = $(`${field}_toggle`);
   if (!button) return;
   button.classList.toggle("is-playing", playing);
-  button.title = `${playing ? "Stop" : "Play"} ${field.replace("_sound", "").replace("_", " ")} sample`;
+  const label = field === "voice" ? "voice" : field.replace("_sound", "").replace("_", " ");
+  button.title = `${playing ? "Stop" : "Play"} ${label} sample`;
   button.setAttribute("aria-label", button.title);
   const text = button.querySelector(".sr-only");
   if (text) text.textContent = playing ? "Stop" : "Play";
@@ -481,6 +515,7 @@ for (const id of [...fields, "service", "label", "message"]) {
   document.addEventListener("change", (event) => {
     if (event.target && event.target.id === id) {
       updatePreview();
+      if (!isLoading && id === "voice") playVoice();
       if (!isLoading && soundFields.includes(id)) playSound(id);
     }
   });
@@ -591,6 +626,15 @@ def play_sample(field: str, sound: str) -> dict:
     return {"ok": True, "field": field, "sound": sound, "path": path}
 
 
+def play_voice_sample(field: str, voice: str, rate: str, text: str) -> dict:
+    cleaned_voice = voice.strip() or DEFAULT_CONFIG["voice"]
+    cleaned_rate = rate.strip() or DEFAULT_CONFIG["rate"]
+    cleaned_text = text.strip() or "Agentic Coding Notify"
+    stop_sample(field)
+    SAMPLE_PROCESSES[field] = subprocess.Popen(["/usr/bin/say", "-v", cleaned_voice, "-r", cleaned_rate, cleaned_text])
+    return {"ok": True, "field": field, "voice": cleaned_voice, "rate": cleaned_rate, "text": cleaned_text}
+
+
 def run_notify_test(body: dict) -> dict:
     config = body.get("config") or load_config()
     service = str(body.get("service") or "Codex App")
@@ -684,6 +728,16 @@ class Handler(BaseHTTPRequestHandler):
                 field = str(body.get("field") or "sample")
                 result = play_sample(field, sound)
                 write_json(self, result, 200 if result.get("ok") else 400)
+            elif route == "/api/play-voice":
+                voice = str(body.get("voice") or "")
+                rate = str(body.get("rate") or "")
+                text = str(body.get("text") or "Agentic Coding Notify")
+                field = str(body.get("field") or "voice")
+                result = play_voice_sample(field, voice, rate, text)
+                write_json(self, result, 200 if result.get("ok") else 400)
+            elif route == "/api/stop-voice":
+                field = str(body.get("field") or "voice")
+                write_json(self, {"ok": True, "field": field, "stopped": stop_samples(field)})
             elif route == "/api/stop-sound":
                 field = str(body.get("field") or "all")
                 write_json(self, {"ok": True, "field": field, "stopped": stop_samples(field)})

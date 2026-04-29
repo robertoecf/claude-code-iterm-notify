@@ -175,6 +175,10 @@ assert "JetBrains Mono" in html
 assert "Apps do not need terminal labels" in html
 assert "color-scheme: light" in html
 assert "N64 gray palette" in html
+assert "Agentic Coding Notify" in html
+assert 'list="voice_options"' in html
+assert 'list="sound_options"' in html
+assert 'list="service_options"' in html
 config = request("/api/config")
 assert config["voice"] == "Zarvox"
 saved = request("/api/config", config)
@@ -192,6 +196,11 @@ play = request("/api/play-sound", {"field": "notification_sound", "sound": "Bass
 assert play["ok"] is True, play
 stop = request("/api/stop-sound", {"field": "notification_sound"})
 assert stop["ok"] is True, stop
+voice = request("/api/play-voice", {"field": "voice", "voice": "Zarvox", "rate": "250", "text": "Agentic Coding Notify"})
+assert voice["ok"] is True, voice
+assert voice["text"] == "Agentic Coding Notify", voice
+stop_voice = request("/api/stop-voice", {"field": "voice"})
+assert stop_voice["ok"] is True, stop_voice
 PY
 kill "$ui_pid" 2>/dev/null || true
 wait "$ui_pid" 2>/dev/null || true
