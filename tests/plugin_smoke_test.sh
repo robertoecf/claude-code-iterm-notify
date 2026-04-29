@@ -78,7 +78,7 @@ codex_output="$(
     '{"type":"agent-turn-complete","cwd":"/tmp/proj","last-assistant-message":"Hook Codex"}'
 )"
 assert_eq "$(field "$codex_output" label)" "Codex App" "Codex hook label"
-assert_eq "$(field "$codex_output" voice_label)" "Codex terminou no app" "Codex hook voice"
+assert_eq "$(field "$codex_output" voice_label)" "Codex App terminou" "Codex hook voice"
 
 opencode_output="$(
   env NOTIFY_TEST_MODE=1 \

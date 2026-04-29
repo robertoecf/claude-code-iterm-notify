@@ -264,7 +264,7 @@ fi
 # that was the source of noise. The user can glance at the desktop
 # notification or the terminal/app for the actual content.
 case "$label" in
-  "Codex App") voice_label="Codex terminou no app" ;;
+  "Codex App") voice_label="Codex App terminou" ;;
   "Cowork")    voice_label="Codex terminou no Cowork" ;;
   *)
     if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then

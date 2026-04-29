@@ -93,7 +93,7 @@ app_output="$(
     '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"qualquer coisa"}'
 )"
 assert_eq "$(field "$app_output" label)"       "Codex App"          "app label"
-assert_eq "$(field "$app_output" voice_label)" "Codex terminou no app" "app voice"
+assert_eq "$(field "$app_output" voice_label)" "Codex App terminou" "app voice"
 
 # 5) cwd fallback when no TERM_PROGRAM and no Codex App.
 : > "$TMP_COOLDOWN"
@@ -120,7 +120,7 @@ desktop_env_output="$(
     '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"qualquer coisa"}'
 )"
 assert_eq "$(field "$desktop_env_output" label)"       "Codex App"          "desktop env label"
-assert_eq "$(field "$desktop_env_output" voice_label)" "Codex terminou no app" "desktop env voice"
+assert_eq "$(field "$desktop_env_output" voice_label)" "Codex App terminou" "desktop env voice"
 
 # 7) Short label (<4 chars) falls back to plain "Codex terminou".
 : > "$TMP_COOLDOWN"

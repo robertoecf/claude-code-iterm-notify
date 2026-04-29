@@ -23,7 +23,7 @@ When the adapter fires, you get:
 2. Audio alert with `Basso`
 3. Voice announcement with the session label
 
-The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex terminou no app` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved.
+The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex App terminou` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved.
 
 ## Requirements
 
