@@ -8,6 +8,11 @@ INSTALLER_PATH="$ROOT_DIR/adapters/codex/install.sh"
 TMP_COOLDOWN="$(mktemp -t codex-notify-test.XXXXXX.json)"
 trap 'rm -f "$TMP_COOLDOWN"' EXIT
 
+# Keep tests hermetic when they are run from inside Codex Desktop. The adapter
+# intentionally detects Codex.app from its parent process tree; most tests below
+# are about terminal/cwd fallback behavior and should not inherit this runner.
+export CODEX_NOTIFY_PARENT_PROCESS_TREE="${CODEX_NOTIFY_PARENT_PROCESS_TREE:-/usr/bin/zsh}"
+
 fail() {
   printf 'FAIL: %s\n' "$1" >&2
   exit 1
