@@ -5,6 +5,19 @@ LOG="${OPENCODE_NOTIFY_LOG:-/tmp/opencode-notify-debug.log}"
 SAFE_CWD="${OPENCODE_NOTIFY_SAFE_CWD:-${TMPDIR:-/tmp}}"
 COOLDOWN_FILE="${OPENCODE_NOTIFY_COOLDOWN_FILE:-/tmp/opencode-notify-last.json}"
 COOLDOWN_SECONDS="${OPENCODE_NOTIFY_COOLDOWN_SECONDS:-60}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$ROOT_DIR/lib/notify-config.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$ROOT_DIR/lib/notify-config.sh"
+elif [ -f "$SCRIPT_DIR/notify-config.sh" ]; then
+  # Installed adapter copy.
+  # shellcheck source=/dev/null
+  . "$SCRIPT_DIR/notify-config.sh"
+else
+  echo "Missing notify-config.sh" >&2
+  exit 1
+fi
 
 safe_python3() {
   (
@@ -297,8 +310,15 @@ printf '%s | event=%s | label=%s | subtitle=%s | message=%s\n' \
   "$subtitle" \
   "$message" >> "$LOG"
 
+notification_sound="$(notify_notification_sound Submarine)"
+voice_text="$(notify_effective_voice_text "OpenCode" "$label" "$voice_label" "$message")"
+voice_name="$(notify_voice_name Samantha)"
+voice_rate="$(notify_voice_rate 300)"
+start_sound="$(notify_start_sound_path /System/Library/Sounds/Basso.aiff)"
+end_sound="$(notify_end_sound_path /System/Library/Sounds/Submarine.aiff)"
+
 if [ "${NOTIFY_TEST_MODE:-0}" = "1" ]; then
-  TITLE="$title" SUBTITLE="$subtitle" MESSAGE="$message" LABEL="$label" VOICE_LABEL="$voice_label" EVENT_TYPE="$event_type" safe_python3 - <<'PY'
+  TITLE="$title" SUBTITLE="$subtitle" MESSAGE="$message" LABEL="$label" VOICE_LABEL="$voice_label" EVENT_TYPE="$event_type" VOICE_TEXT="$voice_text" VOICE="$voice_name" RATE="$voice_rate" NOTIFICATION_SOUND="$notification_sound" START_SOUND="$start_sound" END_SOUND="$end_sound" safe_python3 - <<'PY'
 import json
 import os
 
@@ -311,6 +331,12 @@ print(
             "label": os.environ["LABEL"],
             "voice_label": os.environ["VOICE_LABEL"],
             "event_type": os.environ["EVENT_TYPE"],
+            "voice_text": os.environ["VOICE_TEXT"],
+            "voice": os.environ["VOICE"],
+            "rate": os.environ["RATE"],
+            "notification_sound": os.environ["NOTIFICATION_SOUND"],
+            "start_sound": os.environ["START_SOUND"],
+            "end_sound": os.environ["END_SOUND"],
         }
     )
 )
@@ -328,11 +354,20 @@ if command -v terminal-notifier >/dev/null 2>&1; then
     -title "$title" \
     -subtitle "$subtitle" \
     -message "$message" \
-    -sound "Submarine" \
+    -sound "$notification_sound" \
     -group "opencode-user-attention" \
     >/dev/null 2>&1 || true
 else
-  osascript -e "display notification \"$message\" with title \"$title\" subtitle \"$subtitle\" sound name \"Submarine\"" >/dev/null 2>&1 || true
+  NOTIFY_TITLE="$title" NOTIFY_SUBTITLE="$subtitle" NOTIFY_MESSAGE="$message" NOTIFY_SOUND="$notification_sound" \
+    osascript - <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run
+  set theTitle to system attribute "NOTIFY_TITLE"
+  set theSubtitle to system attribute "NOTIFY_SUBTITLE"
+  set theMessage to system attribute "NOTIFY_MESSAGE"
+  set theSound to system attribute "NOTIFY_SOUND"
+  display notification theMessage with title theTitle subtitle theSubtitle sound name theSound
+end run
+APPLESCRIPT
 fi
 
 # Force voice_label to safe value if label is too short
@@ -341,7 +376,6 @@ if [ ${#label} -lt 4 ] && [ "$label" != "App" ]; then
 fi
 
 printf "%s | VOICE: %s\n" "$(date '+%Y-%m-%d %H:%M:%S')" "$voice_label" >> "$LOG"
-nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Samantha -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
-disown
+notify_dispatch_audio "$LOG" "OpenCode" "$label" "$voice_label" "$message"
 
 exit 0

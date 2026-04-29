@@ -33,7 +33,9 @@ printf 'Running plugin smoke tests...\n'
 /usr/bin/python3 -m json.tool hooks/hooks.json >/dev/null
 /usr/bin/python3 -m json.tool .claude-plugin/plugin.json >/dev/null
 /usr/bin/python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
+/usr/bin/python3 -m py_compile web/notify_ui.py
 bash -n \
+  lib/notify-config.sh \
   hooks/scripts/notify.sh \
   adapters/claude/notify.sh \
   adapters/codex/notify.sh \
@@ -130,11 +132,58 @@ bash adapters/codex/install.sh --print-config "$TMP_DIR/codex-notify.sh" |
   grep -Fqx "notify = [\"$TMP_DIR/codex-notify.sh\"]"
 bash adapters/codex/install.sh --install-script "$TMP_DIR/codex-notify.sh" >/dev/null
 [ -x "$TMP_DIR/codex-notify.sh" ] || fail "Codex installer did not create executable"
+[ -x "$TMP_DIR/notify-config.sh" ] || fail "Codex installer did not copy config helper"
 
 PI_PLUGIN_ROOT="$TMP_DIR/pi-root" bash adapters/pi/install.sh >/dev/null
 [ -x "$TMP_DIR/pi-root/adapters/pi/notify.sh" ] || fail "Pi installer did not create executable"
+[ -x "$TMP_DIR/pi-root/adapters/pi/notify-config.sh" ] || fail "Pi installer did not copy config helper"
 
 OPENCODE_PLUGIN_ROOT="$TMP_DIR/opencode-root" bash adapters/opencode/install.sh >/dev/null
 [ -x "$TMP_DIR/opencode-root/adapters/opencode/notify.sh" ] || fail "OpenCode installer did not create executable"
+[ -x "$TMP_DIR/opencode-root/adapters/opencode/notify-config.sh" ] || fail "OpenCode installer did not copy config helper"
+
+# Local web UI API smoke test.
+AGENTIC_CODING_NOTIFY_CONFIG="$TMP_DIR/ui-config.json" /usr/bin/python3 web/notify_ui.py --port 18765 >"$TMP_DIR/ui.log" 2>&1 &
+ui_pid=$!
+for _ in 1 2 3 4 5; do
+  if /usr/bin/python3 - <<'PY' >/dev/null 2>&1
+import urllib.request
+urllib.request.urlopen("http://127.0.0.1:18765/api/config", timeout=1).read()
+PY
+  then
+    break
+  fi
+  sleep 0.5
+done
+/usr/bin/python3 - <<'PY'
+import json
+import urllib.request
+
+def request(path, payload=None):
+    data = None if payload is None else json.dumps(payload).encode()
+    req = urllib.request.Request(
+        f"http://127.0.0.1:18765{path}",
+        data=data,
+        headers={"content-type": "application/json"},
+        method="POST" if payload is not None else "GET",
+    )
+    return json.loads(urllib.request.urlopen(req, timeout=3).read())
+
+config = request("/api/config")
+assert config["voice"] == "Zarvox"
+saved = request("/api/config", config)
+assert saved["ok"] is True
+result = request("/api/test", {
+    "config": config,
+    "service": "Codex App",
+    "label": "review",
+    "message": "smoke",
+    "dry_run": True,
+})
+assert result["ok"] is True, result
+assert "Codex App" in result["stdout"], result
+PY
+kill "$ui_pid" 2>/dev/null || true
+wait "$ui_pid" 2>/dev/null || true
 
 printf 'PASS: plugin smoke tests\n'

@@ -23,7 +23,7 @@ When the adapter fires, you get:
 2. Audio alert with `Basso`
 3. Voice announcement with the session label
 
-The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex App terminou` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved.
+The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex App terminou` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved unless you override it in the local preferences UI.
 
 ## Requirements
 
@@ -36,6 +36,50 @@ The spoken label is environment-specific. For Codex, the voice says `Codex termi
 ```bash
 brew install terminal-notifier
 ```
+
+## Local preferences UI
+
+Run the local web UI:
+
+```bash
+python3 web/notify_ui.py --open
+```
+
+Then use `http://127.0.0.1:8765` to choose:
+
+- spoken text templates for app and CLI contexts
+- macOS `say` voice
+- `say -r` speech rate
+- notification sound
+- start and end sounds played with `afplay`
+
+Preferences are saved to:
+
+```text
+~/.agentic-coding-notify/config.json
+```
+
+The UI defaults to the older classic style:
+
+```json
+{
+  "voice": "Zarvox",
+  "rate": "250",
+  "notification_sound": "Submarine",
+  "start_sound": "Basso",
+  "end_sound": "Submarine",
+  "app_voice_text_template": "{service} App",
+  "cli_voice_text_template": "{service} {label}"
+}
+```
+
+Supported template placeholders:
+
+- `{service}`: `Claude`, `Codex`, `OpenCode`, or `Pi`
+- `{label}`: app label or CLI tab/profile/cwd label
+- `{voice_label}`: adapter-computed fallback text
+- `{message}`: notification message preview
+- `{context}`: `app` or `cli`
 
 ## Claude Code
 
@@ -148,6 +192,7 @@ The terminal (iTerm2, Ghostty, Terminal.app) then emits native desktop notificat
 
 | Environment variable | Default | Purpose |
 |---|---|---|
+| `AGENTIC_CODING_NOTIFY_CONFIG` | `~/.agentic-coding-notify/config.json` | Shared voice/sound preferences file |
 | `CODEX_NOTIFY_LOG` | `/tmp/codex-notify-debug.log` | Debug log path |
 | `CODEX_NOTIFY_COOLDOWN_FILE` | `/tmp/codex-notify-last.json` | Dedup state file |
 | `CODEX_NOTIFY_COOLDOWN_SECONDS` | `30` | Window for suppressing identical events |
@@ -201,13 +246,24 @@ When a session needs attention, the voice will use the profile name when it can 
 │   ├── hooks.json
 │   └── scripts
 │       └── notify.sh
-└── tests
-    └── codex_notify_test.sh
+├── lib
+│   └── notify-config.sh
+├── tests
+│   ├── codex_notify_test.sh
+│   └── plugin_smoke_test.sh
+└── web
+    └── notify_ui.py
 ```
 
 ## Development
 
-Run the Codex adapter regression test:
+Run the full smoke suite:
+
+```bash
+./tests/plugin_smoke_test.sh
+```
+
+Run only the Codex adapter regression test:
 
 ```bash
 ./tests/codex_notify_test.sh

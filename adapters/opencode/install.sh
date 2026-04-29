@@ -5,8 +5,10 @@ set -euo pipefail
 # Symlinks the notify script to the plugin hooks directory
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 ADAPTER_NAME="opencode"
 NOTIFY_SCRIPT="$SCRIPT_DIR/notify.sh"
+CONFIG_HELPER="$ROOT_DIR/lib/notify-config.sh"
 TARGET_DIR="${OPENCODE_PLUGIN_ROOT:-$HOME/.config/superpowers/worktrees/agentic-coding-notify/codex-notify}"
 
 echo "Installing OpenCode notification adapter..."
@@ -21,7 +23,9 @@ mkdir -p "$TARGET_DIR/adapters/$ADAPTER_NAME"
 
 # Copy the notify script
 cp "$NOTIFY_SCRIPT" "$TARGET_DIR/adapters/$ADAPTER_NAME/notify.sh"
+cp "$CONFIG_HELPER" "$TARGET_DIR/adapters/$ADAPTER_NAME/notify-config.sh"
 chmod +x "$TARGET_DIR/adapters/$ADAPTER_NAME/notify.sh"
+chmod +x "$TARGET_DIR/adapters/$ADAPTER_NAME/notify-config.sh"
 
 echo "✓ OpenCode adapter installed to $TARGET_DIR/adapters/$ADAPTER_NAME/"
 echo ""

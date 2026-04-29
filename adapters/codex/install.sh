@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SOURCE_SCRIPT="$ROOT_DIR/adapters/codex/notify.sh"
+SOURCE_CONFIG="$ROOT_DIR/lib/notify-config.sh"
 DEFAULT_TARGET="${HOME}/.codex/bin/codex-notify.sh"
 
 print_usage() {
@@ -23,8 +24,11 @@ install_script() {
   local target="${1:-$DEFAULT_TARGET}"
   mkdir -p "$(dirname "$target")"
   cp "$SOURCE_SCRIPT" "$target"
+  cp "$SOURCE_CONFIG" "$(dirname "$target")/notify-config.sh"
   chmod +x "$target"
+  chmod +x "$(dirname "$target")/notify-config.sh"
   printf 'Installed Codex notifier script to %s\n' "$target"
+  printf 'Installed shared notifier config helper to %s\n' "$(dirname "$target")/notify-config.sh"
 }
 
 self_test() {

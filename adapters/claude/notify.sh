@@ -5,6 +5,19 @@ set -euo pipefail
 # Keeps the original plugin behavior while allowing a dry-run mode for tests.
 
 LOG="${CLAUDE_NOTIFY_LOG:-/tmp/claude-notify-debug.log}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+if [ -f "$ROOT_DIR/lib/notify-config.sh" ]; then
+  # shellcheck source=/dev/null
+  . "$ROOT_DIR/lib/notify-config.sh"
+elif [ -f "$SCRIPT_DIR/notify-config.sh" ]; then
+  # Installed adapter copy.
+  # shellcheck source=/dev/null
+  . "$SCRIPT_DIR/notify-config.sh"
+else
+  echo "Missing notify-config.sh" >&2
+  exit 1
+fi
 
 input="$(cat 2>/dev/null || true)"
 message="$(
@@ -53,11 +66,24 @@ fi
 
 echo "$(date '+%H:%M:%S') | LABEL=$label VOICE=$voice_label MSG=$message" >> "$LOG"
 
+notification_sound="$(notify_notification_sound Submarine)"
+voice_text="$(notify_effective_voice_text "Claude" "$label" "$voice_label" "$message")"
+voice_name="$(notify_voice_name Samantha)"
+voice_rate="$(notify_voice_rate 300)"
+start_sound="$(notify_start_sound_path /System/Library/Sounds/Basso.aiff)"
+end_sound="$(notify_end_sound_path /System/Library/Sounds/Submarine.aiff)"
+
 if [ "${NOTIFY_TEST_MODE:-0}" = "1" ]; then
   CLAUDE_NOTIFY_TITLE="$title" \
   CLAUDE_NOTIFY_MESSAGE="$message" \
   CLAUDE_NOTIFY_LABEL="$label" \
   CLAUDE_NOTIFY_VOICE_LABEL="$voice_label" \
+  CLAUDE_NOTIFY_VOICE_TEXT="$voice_text" \
+  CLAUDE_NOTIFY_VOICE="$voice_name" \
+  CLAUDE_NOTIFY_RATE="$voice_rate" \
+  CLAUDE_NOTIFY_NOTIFICATION_SOUND="$notification_sound" \
+  CLAUDE_NOTIFY_START_SOUND="$start_sound" \
+  CLAUDE_NOTIFY_END_SOUND="$end_sound" \
   /usr/bin/python3 - <<'PY'
 import json
 import os
@@ -69,6 +95,12 @@ print(
             "message": os.environ["CLAUDE_NOTIFY_MESSAGE"],
             "label": os.environ["CLAUDE_NOTIFY_LABEL"],
             "voice_label": os.environ["CLAUDE_NOTIFY_VOICE_LABEL"],
+            "voice_text": os.environ["CLAUDE_NOTIFY_VOICE_TEXT"],
+            "voice": os.environ["CLAUDE_NOTIFY_VOICE"],
+            "rate": os.environ["CLAUDE_NOTIFY_RATE"],
+            "notification_sound": os.environ["CLAUDE_NOTIFY_NOTIFICATION_SOUND"],
+            "start_sound": os.environ["CLAUDE_NOTIFY_START_SOUND"],
+            "end_sound": os.environ["CLAUDE_NOTIFY_END_SOUND"],
         }
     )
 )
@@ -77,15 +109,22 @@ PY
 fi
 
 if command -v terminal-notifier >/dev/null 2>&1; then
-  terminal-notifier -title "$title ($label)" -message "$message" -sound "Submarine" 2>/dev/null || true
+  terminal-notifier -title "$title ($label)" -message "$message" -sound "$notification_sound" 2>/dev/null || true
   echo "$(date '+%H:%M:%S') | NOTIFICATION (terminal-notifier)" >> "$LOG"
 else
-  osascript -e "display notification \"$message\" with title \"$title ($label)\" sound name \"Submarine\"" 2>/dev/null || true
+  NOTIFY_TITLE="$title ($label)" NOTIFY_MESSAGE="$message" NOTIFY_SOUND="$notification_sound" \
+    osascript - <<'APPLESCRIPT' >/dev/null 2>&1 || true
+on run
+  set theTitle to system attribute "NOTIFY_TITLE"
+  set theMessage to system attribute "NOTIFY_MESSAGE"
+  set theSound to system attribute "NOTIFY_SOUND"
+  display notification theMessage with title theTitle sound name theSound
+end run
+APPLESCRIPT
   echo "$(date '+%H:%M:%S') | NOTIFICATION (osascript)" >> "$LOG"
 fi
 
-nohup bash -c "afplay \"/System/Library/Sounds/Basso.aiff\" & say -v Samantha -r 300 \"$voice_label\" && afplay \"/System/Library/Sounds/Submarine.aiff\"" >> "$LOG" 2>&1 &
-disown
+notify_dispatch_audio "$LOG" "Claude" "$label" "$voice_label" "$message"
 echo "$(date '+%H:%M:%S') | SOUND DISPATCHED" >> "$LOG"
 
 exit 0
