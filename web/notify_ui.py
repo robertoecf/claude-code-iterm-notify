@@ -22,6 +22,7 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = Path(os.environ.get("AGENTIC_CODING_NOTIFY_CONFIG", Path.home() / ".agentic-coding-notify" / "config.json"))
 SYSTEM_SOUND_DIR = Path("/System/Library/Sounds")
+SAMPLE_PROCESSES: dict[str, subprocess.Popen] = {}
 
 DEFAULT_CONFIG = {
     "voice": "Zarvox",
@@ -55,10 +56,23 @@ HTML = r"""
     input[type="range"] { padding: 0; }
     .row { display: flex; gap: 10px; align-items: center; }
     .row > * { flex: 1; }
+    .sound-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+    .sound-row button { padding: 0; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
     button { border: 0; border-radius: 999px; padding: 10px 15px; background: #eef0f5; color: #111318; font-weight: 700; cursor: pointer; }
     button.secondary { background: #2a2f3a; color: #f2f4f8; }
     button.warn { background: #e8b34d; color: #18130a; }
+    .icon-button { width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid #3a4250; border-radius: 12px; background: #11151c; color: #f2f4f8; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
+    .icon-button:hover { background: #202632; color: #ffffff; }
+    .icon-button svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-button.play svg { fill: currentColor; stroke: currentColor; }
+    .icon-button .stop-icon { display: none; }
+    .icon-button.is-playing { background: #312022; color: #ffddd6; border-color: #7a3d35; }
+    .icon-button.is-playing .play-icon { display: none; }
+    .icon-button.is-playing .stop-icon { display: block; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .preview { margin-top: 14px; border: 1px solid #3a4250; border-radius: 14px; padding: 12px; background: #11151c; }
+    .preview strong { display: block; margin-bottom: 4px; color: #ffffff; }
     code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
     .hint { font-size: 12px; color: #8f98aa; }
     pre { white-space: pre-wrap; background: #090b0f; border: 1px solid #252b36; border-radius: 12px; padding: 14px; min-height: 120px; max-height: 360px; overflow: auto; }
@@ -82,21 +96,42 @@ HTML = r"""
       <p class="hint">macOS <code>say -r</code> uses words per minute. 250 is roughly 1.25x a 200 wpm baseline.</p>
 
       <label for="notification_sound">Notification sound</label>
-      <select id="notification_sound"></select>
+      <div class="sound-row">
+        <select id="notification_sound"></select>
+        <button id="notification_sound_toggle" class="icon-button play" title="Play notification sample" aria-label="Play notification sample" onclick="toggleSound('notification_sound')">
+          <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+          <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+          <span class="sr-only">Play</span>
+        </button>
+      </div>
 
       <div class="row">
         <div>
           <label for="start_sound">Start sound</label>
-          <select id="start_sound"></select>
+          <div class="sound-row">
+            <select id="start_sound"></select>
+            <button id="start_sound_toggle" class="icon-button play" title="Play start sample" aria-label="Play start sample" onclick="toggleSound('start_sound')">
+              <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+              <span class="sr-only">Play</span>
+            </button>
+          </div>
         </div>
         <div>
           <label for="end_sound">End sound</label>
-          <select id="end_sound"></select>
+          <div class="sound-row">
+            <select id="end_sound"></select>
+            <button id="end_sound_toggle" class="icon-button play" title="Play end sample" aria-label="Play end sample" onclick="toggleSound('end_sound')">
+              <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+              <span class="sr-only">Play</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="actions">
-        <button class="secondary" onclick="playSound('start_sound')">Play start</button>
-        <button class="secondary" onclick="playSound('end_sound')">Play end</button>
+        <button class="secondary" onclick="applyClassicPreset()">Classic preset</button>
+        <button class="secondary" onclick="stopAllSounds()">Stop all samples</button>
       </div>
     </section>
 
@@ -132,10 +167,16 @@ HTML = r"""
         <div>
           <label for="label">CLI tab/profile label</label>
           <input id="label" value="review" />
+          <p class="hint">Tip: in terminal, rename tabs to simple labels like <code>One</code>, <code>Two</code>, or <code>Three</code>. The plugin already detects the CLI service; the tab name just helps you track which session called.</p>
         </div>
       </div>
       <label for="message">Notification message</label>
       <textarea id="message">Teste do agentic-coding-notify</textarea>
+      <div class="preview">
+        <strong>Will say</strong>
+        <code id="spokenPreview"></code>
+        <p class="hint" id="soundPreview"></p>
+      </div>
       <div class="actions">
         <button onclick="saveConfig()">Save config</button>
         <button class="secondary" onclick="testNotify(true)">Dry-run JSON</button>
@@ -152,7 +193,21 @@ HTML = r"""
 </main>
 <script>
 const fields = ["voice", "rate", "notification_sound", "start_sound", "end_sound", "app_voice_text_template", "cli_voice_text_template", "voice_text_template"];
+const soundFields = ["notification_sound", "start_sound", "end_sound"];
 let options = { voices: [], sounds: [] };
+let isLoading = true;
+let sampleState = {};
+let sampleTimers = {};
+const classicPreset = {
+  voice: "Zarvox",
+  rate: "250",
+  notification_sound: "Submarine",
+  start_sound: "Basso",
+  end_sound: "Submarine",
+  app_voice_text_template: "{service} App",
+  cli_voice_text_template: "{service} {label}",
+  voice_text_template: ""
+};
 
 function $(id) { return document.getElementById(id); }
 function status(value) { $("status").textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2); }
@@ -168,12 +223,52 @@ function fillSelect(id, values, includeNone = false) {
   for (const value of values) el.appendChild(new Option(value, value));
 }
 function setConfig(cfg) {
+  isLoading = true;
   for (const f of fields) if ($(f)) $(f).value = cfg[f] ?? "";
   updateRateLabel();
+  updatePreview();
+  isLoading = false;
 }
 function updateRateLabel() {
   const rate = Number($("rate").value || 250);
   $("rateLabel").textContent = `${rate} wpm (~${(rate / 200).toFixed(2)}x)`;
+}
+function selectedServiceParts() {
+  const raw = $("service").value;
+  const isApp = raw.endsWith(" App");
+  return {
+    raw,
+    service: raw.replace(/ (App|CLI)$/, ""),
+    label: isApp ? `${raw.replace(/ App$/, "")} App` : ($("label").value || raw.replace(/ CLI$/, "")),
+    context: isApp ? "app" : "cli"
+  };
+}
+function renderTemplate(template, values) {
+  let output = template || "{voice_label}";
+  for (const [key, value] of Object.entries(values)) {
+    output = output.split(`{${key}}`).join(value);
+  }
+  return output.trim().replace(/\s+/g, " ");
+}
+function computeSpokenPreview() {
+  const parts = selectedServiceParts();
+  const fallback = parts.context === "app" ? parts.label : `${parts.service} ${parts.label}`;
+  const template = $("voice_text_template").value || (parts.context === "app" ? $("app_voice_text_template").value : $("cli_voice_text_template").value);
+  return renderTemplate(template, {
+    service: parts.service,
+    label: parts.label,
+    context: parts.context,
+    voice_label: fallback,
+    message: $("message").value
+  });
+}
+function updatePreview() {
+  $("spokenPreview").textContent = computeSpokenPreview();
+  $("soundPreview").textContent = `Voice: ${$("voice").value} @ ${$("rate").value} wpm · start: ${$("start_sound").value} · notification: ${$("notification_sound").value} · end: ${$("end_sound").value}`;
+}
+function applyClassicPreset() {
+  setConfig(classicPreset);
+  status({ preset: "classic", config: currentConfig() });
 }
 async function load() {
   options = await (await fetch("/api/options")).json();
@@ -196,10 +291,61 @@ async function testNotify(dryRun) {
   status(await res.json());
 }
 async function playSound(field) {
-  const res = await fetch("/api/play-sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ sound: $(field).value }) });
-  status(await res.json());
+  const res = await fetch("/api/play-sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ field, sound: $(field).value }) });
+  const payload = await res.json();
+  status(payload);
+  if (payload.ok) setSoundPlaying(field, true);
 }
-$("rate").addEventListener("input", updateRateLabel);
+async function stopSound(field) {
+  const res = await fetch("/api/stop-sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ field }) });
+  const payload = await res.json();
+  status(payload);
+  setSoundPlaying(field, false);
+}
+async function stopAllSounds() {
+  const res = await fetch("/api/stop-sound", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ field: "all" }) });
+  const payload = await res.json();
+  status(payload);
+  for (const field of soundFields) setSoundPlaying(field, false);
+}
+async function toggleSound(field) {
+  if (sampleState[field]) {
+    await stopSound(field);
+  } else {
+    await playSound(field);
+  }
+}
+function setSoundPlaying(field, playing) {
+  sampleState[field] = playing;
+  if (sampleTimers[field]) {
+    clearTimeout(sampleTimers[field]);
+    sampleTimers[field] = null;
+  }
+  const button = $(`${field}_toggle`);
+  if (!button) return;
+  button.classList.toggle("is-playing", playing);
+  button.title = `${playing ? "Stop" : "Play"} ${field.replace("_sound", "").replace("_", " ")} sample`;
+  button.setAttribute("aria-label", button.title);
+  const text = button.querySelector(".sr-only");
+  if (text) text.textContent = playing ? "Stop" : "Play";
+  if (playing) {
+    sampleTimers[field] = setTimeout(() => setSoundPlaying(field, false), 2500);
+  }
+}
+for (const id of [...fields, "service", "label", "message"]) {
+  document.addEventListener("input", (event) => {
+    if (event.target && event.target.id === id) {
+      if (id === "rate") updateRateLabel();
+      updatePreview();
+    }
+  });
+  document.addEventListener("change", (event) => {
+    if (event.target && event.target.id === id) {
+      updatePreview();
+      if (!isLoading && soundFields.includes(id)) playSound(id);
+    }
+  });
+}
 load().catch(err => status(String(err.stack || err)));
 </script>
 </body>
@@ -276,6 +422,34 @@ def sound_to_path(sound: str) -> str | None:
     if candidate.is_file():
         return str(candidate)
     return None
+
+
+def stop_sample(field: str) -> bool:
+    proc = SAMPLE_PROCESSES.pop(field, None)
+    if not proc:
+        return False
+    if proc.poll() is None:
+        proc.terminate()
+    return True
+
+
+def stop_samples(field: str | None = None) -> list[str]:
+    if field and field != "all":
+        return [field] if stop_sample(field) else []
+    stopped = []
+    for key in list(SAMPLE_PROCESSES):
+        if stop_sample(key):
+            stopped.append(key)
+    return stopped
+
+
+def play_sample(field: str, sound: str) -> dict:
+    path = sound_to_path(sound)
+    if not path:
+        return {"ok": False, "error": f"sound not found: {sound}"}
+    stop_sample(field)
+    SAMPLE_PROCESSES[field] = subprocess.Popen(["/usr/bin/afplay", path])
+    return {"ok": True, "field": field, "sound": sound, "path": path}
 
 
 def run_notify_test(body: dict) -> dict:
@@ -368,12 +542,12 @@ class Handler(BaseHTTPRequestHandler):
                 write_json(self, run_notify_test(body))
             elif route == "/api/play-sound":
                 sound = str(body.get("sound") or "")
-                path = sound_to_path(sound)
-                if not path:
-                    write_json(self, {"ok": False, "error": f"sound not found: {sound}"}, 400)
-                    return
-                subprocess.Popen(["/usr/bin/afplay", path])
-                write_json(self, {"ok": True, "sound": sound, "path": path})
+                field = str(body.get("field") or "sample")
+                result = play_sample(field, sound)
+                write_json(self, result, 200 if result.get("ok") else 400)
+            elif route == "/api/stop-sound":
+                field = str(body.get("field") or "all")
+                write_json(self, {"ok": True, "field": field, "stopped": stop_samples(field)})
             else:
                 write_json(self, {"error": "not found"}, 404)
         except Exception as exc:  # keep UI debuggable

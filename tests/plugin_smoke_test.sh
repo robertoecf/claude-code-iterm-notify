@@ -182,6 +182,10 @@ result = request("/api/test", {
 })
 assert result["ok"] is True, result
 assert "Codex App" in result["stdout"], result
+play = request("/api/play-sound", {"field": "notification_sound", "sound": "Basso"})
+assert play["ok"] is True, play
+stop = request("/api/stop-sound", {"field": "notification_sound"})
+assert stop["ok"] is True, stop
 PY
 kill "$ui_pid" 2>/dev/null || true
 wait "$ui_pid" 2>/dev/null || true

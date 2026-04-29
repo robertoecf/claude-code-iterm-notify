@@ -52,6 +52,7 @@ Then use `http://127.0.0.1:8765` to choose:
 - `say -r` speech rate
 - notification sound
 - start and end sounds played with `afplay`
+- sound samples: changing a sound field plays a sample automatically, and each sound field has a single Play/Stop toggle control
 
 Preferences are saved to:
 
@@ -225,6 +226,8 @@ The adapter now resolves these environments explicitly:
 If you run multiple Claude or Codex sessions in iTerm2, create named profiles such as `1`, `2`, `api`, or `review`.
 
 When a session needs attention, the voice will use the profile name when it can be resolved. That is the cleanest way to identify parallel sessions.
+
+Tip: use short terminal tab/profile names such as `One`, `Two`, or `Three`. The adapter already identifies the CLI service (`Claude`, `Codex`, `OpenCode`, `Pi`), so the tab/profile name only needs to identify the session.
 
 ## Repository layout
 
