@@ -53,7 +53,7 @@ claude plugin install claude-code-notify@agentic-coding-notify
 From GitHub:
 
 ```bash
-claude plugin marketplace add github:robertoecf/agentic-coding-notify
+claude plugin marketplace add robertoecf/agentic-coding-notify
 claude plugin install claude-code-notify@agentic-coding-notify
 ```
 
