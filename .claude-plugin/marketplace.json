@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "macOS notifications with sound and voice alerts for agent CLIs.",
-    "version": "2.3.1"
+    "version": "2.3.2"
   },
   "plugins": [
     {
       "name": "claude-code-notify",
       "description": "macOS desktop notifications with sound and voice alerts for Claude Code. This repo also ships dedicated adapters for Codex, OpenCode, and Pi.",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "source": "./",
       "author": {
         "name": "Roberto",

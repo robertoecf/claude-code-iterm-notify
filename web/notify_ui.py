@@ -43,58 +43,159 @@ HTML = r"""
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>agentic-coding-notify</title>
   <style>
-    :root { color-scheme: dark; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    body { margin: 0; background: #0f1115; color: #e8e9ed; }
-    main { max-width: 980px; margin: 0 auto; padding: 32px 20px 48px; }
-    h1 { margin: 0 0 4px; font-size: 28px; }
-    p { color: #aeb4c2; line-height: 1.45; }
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-    .card { background: #171a21; border: 1px solid #2a2f3a; border-radius: 16px; padding: 18px; box-shadow: 0 14px 42px rgba(0,0,0,.22); }
-    label { display: block; font-size: 13px; color: #bcc3d2; margin: 14px 0 6px; }
-    input, select, textarea { width: 100%; box-sizing: border-box; border: 1px solid #343b49; background: #0f1115; color: #f4f5f7; border-radius: 10px; padding: 10px 11px; font: inherit; }
-    textarea { min-height: 90px; resize: vertical; }
-    input[type="range"] { padding: 0; }
-    .row { display: flex; gap: 10px; align-items: center; }
-    .row > * { flex: 1; }
-    .sound-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
-    .sound-row button { padding: 0; }
+    :root {
+      color-scheme: dark;
+      --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+      --font-display: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+      --bg: #0b0d10;
+      --panel: rgba(21, 24, 30, .82);
+      --panel-strong: #171b22;
+      --line: rgba(226, 232, 240, .11);
+      --line-strong: rgba(226, 232, 240, .18);
+      --text: #f3f0e8;
+      --muted: #9da7b8;
+      --faint: #6f7989;
+      --accent: #d6a85a;
+      --accent-2: #86d7b6;
+      --warn: #ee9f6c;
+      --danger: #ffb0a4;
+      --shadow: 0 26px 80px rgba(0, 0, 0, .36);
+      font-family: var(--font-ui);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 16% -8%, rgba(214, 168, 90, .14), transparent 30%),
+        radial-gradient(circle at 88% 12%, rgba(134, 215, 182, .09), transparent 34%),
+        linear-gradient(135deg, #080a0d 0%, #10131a 52%, #0a0c10 100%);
+      color: var(--text);
+      font-family: var(--font-ui);
+      letter-spacing: -.01em;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .38;
+      background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: radial-gradient(circle at top, #000 0%, transparent 70%);
+    }
+    main { position: relative; max-width: 1120px; margin: 0 auto; padding: 34px 22px 56px; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; margin-bottom: 22px; }
+    .eyebrow { margin: 0 0 8px; color: var(--accent); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { margin: 0; font-family: var(--font-display); font-size: clamp(34px, 6vw, 58px); line-height: .92; letter-spacing: -.065em; }
+    .subtitle { max-width: 660px; margin: 14px 0 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
+    .status-pill { justify-self: end; min-width: 188px; border: 1px solid var(--line); border-radius: 20px; background: rgba(15, 18, 24, .72); padding: 14px 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    .status-pill span { display: block; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; }
+    .status-pill strong { display: block; margin-top: 5px; color: var(--accent-2); font-family: var(--font-mono); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    .card {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, rgba(28, 32, 40, .88), rgba(18, 21, 27, .88));
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 20px;
+      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.04);
+      backdrop-filter: blur(18px);
+    }
+    .card::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.018); }
+    .full { grid-column: 1 / -1; }
+    h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 16px; letter-spacing: -.025em; }
+    .section-index, .mono, code, pre, #rateLabel, #spokenPreview, #configPath { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .section-index { color: var(--accent); font-size: 12px; letter-spacing: .08em; }
+    p { color: var(--muted); line-height: 1.5; }
+    label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: #c1c8d4; margin: 14px 0 7px; letter-spacing: .01em; }
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      background: rgba(10, 12, 16, .78);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 11px 12px;
+      font: inherit;
+      outline: none;
+      transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+    }
+    input:focus, select:focus, textarea:focus { border-color: rgba(214, 168, 90, .62); box-shadow: 0 0 0 3px rgba(214, 168, 90, .12); background: rgba(12, 15, 20, .96); }
+    textarea { min-height: 92px; resize: vertical; }
+    input[type="range"] { padding: 0; accent-color: var(--accent); }
+    .row { display: flex; gap: 10px; align-items: start; }
+    .row > * { flex: 1; min-width: 0; }
+    .sound-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: center; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    button { border: 0; border-radius: 999px; padding: 10px 15px; background: #eef0f5; color: #111318; font-weight: 700; cursor: pointer; }
-    button.secondary { background: #2a2f3a; color: #f2f4f8; }
-    button.warn { background: #e8b34d; color: #18130a; }
-    .icon-button { width: 42px; height: 42px; display: inline-grid; place-items: center; border: 1px solid #3a4250; border-radius: 12px; background: #11151c; color: #f2f4f8; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
-    .icon-button:hover { background: #202632; color: #ffffff; }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 15px;
+      background: #eee7d8;
+      color: #121417;
+      font-weight: 800;
+      cursor: pointer;
+      letter-spacing: -.015em;
+      box-shadow: 0 10px 26px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.5);
+    }
+    button:hover { transform: translateY(-1px); }
+    button.secondary { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+    button.warn { background: var(--accent); color: #17110a; }
+    .icon-button { width: 43px; height: 43px; padding: 0; display: inline-grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 14px; background: rgba(12, 15, 20, .92); color: #f4ead7; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); }
+    .icon-button:hover { background: rgba(34, 39, 49, .96); color: #ffffff; }
     .icon-button svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
     .icon-button.play svg { fill: currentColor; stroke: currentColor; }
     .icon-button .stop-icon { display: none; }
-    .icon-button.is-playing { background: #312022; color: #ffddd6; border-color: #7a3d35; }
+    .icon-button.is-playing { background: rgba(74, 35, 30, .88); color: var(--danger); border-color: rgba(255, 176, 164, .42); }
     .icon-button.is-playing .play-icon { display: none; }
     .icon-button.is-playing .stop-icon { display: block; }
     .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    .preview { margin-top: 14px; border: 1px solid #3a4250; border-radius: 14px; padding: 12px; background: #11151c; }
-    .preview strong { display: block; margin-bottom: 4px; color: #ffffff; }
-    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-    .hint { font-size: 12px; color: #8f98aa; }
-    pre { white-space: pre-wrap; background: #090b0f; border: 1px solid #252b36; border-radius: 12px; padding: 14px; min-height: 120px; max-height: 360px; overflow: auto; }
-    .full { grid-column: 1 / -1; }
-    @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+    .preview { margin-top: 14px; border: 1px solid var(--line); border-radius: 18px; padding: 14px; background: rgba(8, 10, 14, .68); }
+    .preview strong { display: block; margin-bottom: 6px; color: #ffffff; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+    .hint { margin: 7px 0 0; font-size: 12px; color: var(--faint); }
+    .notice { border: 1px solid rgba(134, 215, 182, .22); background: rgba(134, 215, 182, .07); }
+    .notice p { margin: 0; color: #c5d6d1; }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+    .chip { border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; color: var(--muted); background: rgba(255,255,255,.035); font-size: 12px; }
+    pre { white-space: pre-wrap; background: #07090c; border: 1px solid var(--line); border-radius: 16px; padding: 14px; min-height: 118px; max-height: 360px; overflow: auto; color: #cfd5df; font-size: 12px; }
+    @media (max-width: 820px) {
+      main { padding: 24px 14px 40px; }
+      .hero, .grid { grid-template-columns: 1fr; }
+      .status-pill { justify-self: stretch; }
+      .full { grid-column: auto; }
+      .row { flex-direction: column; }
+    }
   </style>
 </head>
 <body>
 <main>
-  <h1>agentic-coding-notify</h1>
-  <p>Local preferences for voice, speech rate, notification sound, start/end sounds, and spoken text templates.</p>
+  <header class="hero">
+    <div>
+      <p class="eyebrow">local macOS control panel</p>
+      <h1>agentic-coding-notify</h1>
+      <p class="subtitle">Local notification preferences for agent apps and CLIs: voice, speech rate, sounds, spoken templates, and test runs.</p>
+    </div>
+    <div class="status-pill" aria-label="Local UI endpoint">
+      <span>local UI</span>
+      <strong>127.0.0.1:8765</strong>
+    </div>
+  </header>
 
   <div class="grid">
     <section class="card">
-      <h2>Voice</h2>
+      <h2><span class="section-index">01</span>Voice</h2>
       <label for="voice">Voice</label>
       <select id="voice"></select>
 
-      <label for="rate">Speech rate: <span id="rateLabel"></span></label>
+      <label for="rate">Speech rate <span id="rateLabel"></span></label>
       <input id="rate" type="range" min="80" max="420" step="5" />
-      <p class="hint">macOS <code>say -r</code> uses words per minute. 250 is roughly 1.25x a 200 wpm baseline.</p>
+      <p class="hint">macOS <code>say -r</code> uses words per minute. <code>250</code> is roughly <code>1.25x</code> a <code>200</code> wpm baseline.</p>
+    </section>
 
+    <section class="card">
+      <h2><span class="section-index">02</span>Sounds</h2>
       <label for="notification_sound">Notification sound</label>
       <div class="sound-row">
         <select id="notification_sound"></select>
@@ -136,7 +237,7 @@ HTML = r"""
     </section>
 
     <section class="card">
-      <h2>Text</h2>
+      <h2><span class="section-index">03</span>Text</h2>
       <label for="app_voice_text_template">App template</label>
       <input id="app_voice_text_template" />
       <p class="hint">Default classic style: <code>{service} App</code> → Claude App / Codex App.</p>
@@ -145,13 +246,23 @@ HTML = r"""
       <input id="cli_voice_text_template" />
       <p class="hint">Default classic style: <code>{service} {label}</code> → Codex review / Claude api.</p>
 
-      <label for="voice_text_template">Override all spoken text (optional)</label>
+      <label for="voice_text_template">Override spoken text</label>
       <input id="voice_text_template" placeholder="Leave blank to use app/CLI templates" />
       <p class="hint">Placeholders: <code>{service}</code>, <code>{label}</code>, <code>{voice_label}</code>, <code>{message}</code>, <code>{context}</code>.</p>
     </section>
 
+    <section class="card notice">
+      <h2><span class="section-index">04</span>Disclosure</h2>
+      <p>Apps do not need terminal labels. CLI sessions can use short tab labels like <code>One</code>, <code>Two</code>, or <code>Three</code>; the plugin already detects the service.</p>
+      <div class="chips" aria-label="Supported contexts">
+        <span class="chip">Claude App</span>
+        <span class="chip">Codex App</span>
+        <span class="chip">Agent CLIs</span>
+      </div>
+    </section>
+
     <section class="card full">
-      <h2>Preview / test</h2>
+      <h2><span class="section-index">05</span>Preview</h2>
       <div class="grid">
         <div>
           <label for="service">Service</label>
@@ -185,7 +296,7 @@ HTML = r"""
     </section>
 
     <section class="card full">
-      <h2>Status</h2>
+      <h2><span class="section-index">06</span>Status</h2>
       <p class="hint">Config path: <code id="configPath"></code></p>
       <pre id="status">Loading…</pre>
     </section>

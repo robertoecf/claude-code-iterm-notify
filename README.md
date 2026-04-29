@@ -45,7 +45,7 @@ Run the local web UI:
 python3 web/notify_ui.py --open
 ```
 
-Then use `http://127.0.0.1:8765` to choose:
+Then use `http://127.0.0.1:8765` to choose. The UI is a compact dark dashboard; numeric/status values use JetBrains Mono when available, with system fallbacks.
 
 - spoken text templates for app and CLI contexts
 - macOS `say` voice
@@ -53,6 +53,7 @@ Then use `http://127.0.0.1:8765` to choose:
 - notification sound
 - start and end sounds played with `afplay`
 - sound samples: changing a sound field plays a sample automatically, and each sound field has a single Play/Stop toggle control
+- disclosure guidance: app sessions do not need terminal labels; CLI sessions can use short tab/profile labels like `One`, `Two`, or `Three` because the adapter already detects the service
 
 Preferences are saved to:
 
