@@ -45,7 +45,7 @@ Run the local web UI:
 python3 web/notify_ui.py --open
 ```
 
-Then use `http://127.0.0.1:8765` to choose. The UI is a compact light-mode-only dashboard with an N64 gray-first retro palette; numeric/status values use JetBrains Mono when available, with system fallbacks. It does not import external CSS or art assets.
+Then use `http://127.0.0.1:8765` to choose. The UI is a light-mode-only retro console panel with an N64 gray-first palette, top status/stop controls, beveled cards, and bottom action buttons; numeric/status values use JetBrains Mono when available, with system fallbacks. It does not import external CSS or art assets.
 
 - spoken text templates for app and CLI contexts
 - searchable macOS `say` voice, with a Play/Stop sample that says `Agentic Coding Notify`

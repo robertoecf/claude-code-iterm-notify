@@ -175,6 +175,8 @@ assert "JetBrains Mono" in html
 assert "Apps do not need terminal labels" in html
 assert "color-scheme: light" in html
 assert "N64 gray palette" in html
+assert "READY" in html
+assert "Stop all" in html
 assert "Agentic Coding Notify" in html
 assert 'list="voice_options"' in html
 assert 'list="sound_options"' in html

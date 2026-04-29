@@ -48,38 +48,30 @@ HTML = r"""
       --font-ui: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
       --font-display: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
       --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
-      --n64-gray: #c9c5bb;
-      --n64-gray-dark: #6d6962;
-      --n64-gray-line: #a9a49a;
-      --n64-cream: #f4f1e8;
-      --n64-offwhite: #fbf8ef;
-      --n64-blue: #2f68d8;
-      --n64-green: #2faf65;
-      --n64-yellow: #f1bf28;
-      --n64-red: #dd3f46;
-      --n64-ink: #24211d;
-      --text: var(--n64-ink);
-      --muted: #5f5a52;
-      --faint: #817b72;
-      --line: rgba(104, 99, 91, .24);
-      --line-strong: rgba(104, 99, 91, .38);
-      --accent: var(--n64-blue);
-      --accent-2: var(--n64-green);
-      --warn: var(--n64-yellow);
-      --danger: var(--n64-red);
-      --shadow: 0 18px 0 rgba(109,105,98,.18), 0 30px 64px rgba(74, 70, 63, .18);
+      --plastic-0: #f4f1e8;
+      --plastic-1: #ddd9cf;
+      --plastic-2: #c9c5bb;
+      --plastic-3: #a9a49a;
+      --plastic-4: #6d6962;
+      --ink: #24221d;
+      --muted: #5c574f;
+      --blue: #2f68d8;
+      --green: #3f9449;
+      --yellow: #f1bf28;
+      --red: #dd3f46;
+      --line: rgba(72, 68, 60, .42);
+      --line-soft: rgba(72, 68, 60, .20);
+      --bevel: inset 1px 1px 0 rgba(255,255,255,.82), inset -1px -1px 0 rgba(74,70,63,.28);
       font-family: var(--font-ui);
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
+      color: var(--ink);
       background:
-        radial-gradient(circle at 12% 4%, rgba(47, 104, 216, .14), transparent 29%),
-        radial-gradient(circle at 90% 8%, rgba(47, 175, 101, .13), transparent 26%),
-        radial-gradient(circle at 82% 84%, rgba(221, 63, 70, .10), transparent 30%),
-        linear-gradient(145deg, #d1cdc3 0%, var(--n64-cream) 40%, #bdb8ad 100%);
-      color: var(--text);
+        radial-gradient(circle at 15% 0%, rgba(255,255,255,.58), transparent 25%),
+        linear-gradient(135deg, #c5c1b7 0%, #e9e5dc 34%, #c0bbb0 100%);
       font-family: var(--font-ui);
       letter-spacing: -.01em;
     }
@@ -88,252 +80,282 @@ HTML = r"""
       position: fixed;
       inset: 0;
       pointer-events: none;
-      opacity: .28;
+      opacity: .20;
       background-image:
-        linear-gradient(rgba(64, 59, 52, .16) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(64, 59, 52, .13) 1px, transparent 1px);
-      background-size: 34px 34px;
-      mask-image: radial-gradient(circle at top, #000 0%, transparent 74%);
+        linear-gradient(rgba(54,50,44,.22) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(54,50,44,.18) 1px, transparent 1px);
+      background-size: 18px 18px;
     }
-    main { position: relative; max-width: 1120px; margin: 0 auto; padding: 34px 22px 56px; }
-    .hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: end; margin-bottom: 22px; }
-    .eyebrow { margin: 0 0 8px; color: var(--n64-red); font-size: 12px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
-    h1 { margin: 0; font-family: var(--font-display); font-size: clamp(34px, 6vw, 58px); line-height: .92; letter-spacing: -.065em; color: #28251f; text-shadow: 2px 2px 0 rgba(255, 255, 255, .72), 4px 4px 0 rgba(47, 104, 216, .18); }
-    .subtitle { max-width: 660px; margin: 14px 0 0; color: var(--muted); font-size: 15px; line-height: 1.6; }
-    .status-pill { justify-self: end; min-width: 220px; border: 1px solid var(--line-strong); border-radius: 20px; background: linear-gradient(180deg, rgba(251, 248, 239, .92), rgba(201, 197, 187, .76)); padding: 14px 15px; box-shadow: inset 0 1px 0 rgba(255,255,255,.78), 0 18px 42px rgba(74,70,63,.16); }
-    .status-pill span { display: block; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; }
-    .status-pill strong { display: block; margin-top: 5px; color: var(--n64-green); font-family: var(--font-mono); font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; }
-    .palette-strip { display: flex; gap: 6px; margin-top: 12px; }
-    .swatch { width: 23px; height: 8px; border-radius: 999px; border: 1px solid rgba(36,33,29,.16); }
-    .swatch.gray { background: var(--n64-gray-dark); }
-    .swatch.blue { background: var(--n64-blue); }
-    .swatch.green { background: var(--n64-green); }
-    .swatch.yellow { background: var(--n64-yellow); }
-    .swatch.red { background: var(--n64-red); }
-    .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-    .card {
-      position: relative;
+    main { position: relative; padding: 14px 18px 22px; }
+    .console {
+      max-width: 1500px;
+      margin: 0 auto;
       overflow: hidden;
+      border: 1px solid #827d73;
+      border-radius: 34px;
+      background: linear-gradient(180deg, #e5e1d8 0%, #d0ccc2 56%, #c2bdb2 100%);
+      box-shadow: var(--bevel), 0 18px 0 rgba(74,70,63,.24), 0 28px 58px rgba(64,60,54,.22);
+    }
+    .topbar {
+      display: grid;
+      grid-template-columns: 84px minmax(0, 1fr) auto auto;
+      gap: 28px;
+      align-items: center;
+      min-height: 138px;
+      padding: 30px 68px;
+    }
+    .stripe-stack { display: grid; gap: 8px; width: 62px; justify-self: center; }
+    .stripe { height: 10px; border-radius: 999px; border: 1px solid rgba(36,33,29,.28); box-shadow: var(--bevel), 0 2px 4px rgba(74,70,63,.18); }
+    .stripe.blue { background: var(--blue); }
+    .stripe.green { background: var(--green); }
+    .stripe.yellow { background: var(--yellow); }
+    .stripe.red { background: var(--red); }
+    h1 { margin: 0; font-family: var(--font-mono); font-size: clamp(34px, 4.4vw, 58px); line-height: .95; letter-spacing: -.07em; color: #25231e; text-shadow: 1px 1px 0 #fff9ec, 3px 3px 0 rgba(74,70,63,.16); }
+    .subtitle { margin: 13px 0 0; color: var(--muted); font-family: var(--font-mono); font-size: 18px; letter-spacing: -.04em; }
+    .status-module { min-width: 130px; padding: 14px 18px; text-align: center; border: 1px solid #7f7a70; border-radius: 10px; background: linear-gradient(180deg, #ebe8df, #d7d3c9); box-shadow: var(--bevel); font-family: var(--font-mono); }
+    .status-module span { display: block; color: #5d574f; font-size: 16px; letter-spacing: .08em; }
+    .status-module strong { display: block; color: var(--green); font-size: 23px; line-height: 1; margin-top: 4px; }
+    .stop-top { display: grid; grid-template-columns: 54px auto; align-items: center; gap: 10px; min-height: 74px; padding: 8px 18px 8px 8px; border-radius: 12px; border: 1px solid #827d73; background: linear-gradient(180deg, #efede6, #cbc7bd); box-shadow: var(--bevel), 5px 5px 0 rgba(74,70,63,.32); color: var(--ink); font-family: var(--font-mono); font-size: 16px; text-align: left; text-transform: uppercase; }
+    .stop-light { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #8c867b; border-radius: 4px; background: linear-gradient(180deg, #f7f5ee, #c8c4ba); box-shadow: var(--bevel); }
+    .stop-light i { width: 20px; height: 20px; background: var(--red); border: 1px solid #6b2b26; box-shadow: inset 1px 1px 0 rgba(255,255,255,.45); }
+    .divider { height: 17px; border-top: 1px solid #817b70; border-bottom: 1px solid rgba(255,255,255,.62); background: linear-gradient(180deg, #c5c1b7, #aaa59a); position: relative; }
+    .divider::after { content: ""; position: absolute; left: 50%; top: 1px; width: 72px; height: 13px; transform: translateX(-50%); background: repeating-linear-gradient(90deg, rgba(70,66,58,.52) 0 5px, transparent 5px 9px); }
+    .deck { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 22px 26px; }
+    .lower { grid-column: 1 / -1; display: grid; grid-template-columns: 1.1fr 1.1fr .9fr; gap: 24px; }
+    .panel {
+      position: relative;
+      padding: 28px 30px 28px;
+      min-height: 250px;
+      border: 1px solid #837d72;
+      border-radius: 12px;
       background:
-        linear-gradient(180deg, rgba(255, 252, 244, .94), rgba(234, 230, 220, .92)) padding-box,
-        linear-gradient(135deg, rgba(109,105,98,.72), rgba(255,255,255,.68), rgba(47,104,216,.26), rgba(221,63,70,.16)) border-box;
-      border: 1px solid transparent;
-      border-radius: 22px;
-      padding: 20px;
-      box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.78), inset 0 -1px 0 rgba(109,105,98,.16);
-      backdrop-filter: blur(18px);
+        linear-gradient(180deg, rgba(255,253,247,.84), rgba(232,228,218,.82)),
+        radial-gradient(circle at 15% 0%, rgba(255,255,255,.62), transparent 28%);
+      box-shadow: var(--bevel), 4px 4px 0 rgba(74,70,63,.18);
     }
-    .card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: linear-gradient(90deg, var(--n64-gray-dark), var(--n64-blue), var(--n64-green), var(--n64-yellow), var(--n64-red)); opacity: .72; }
-    .card::after { content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
-    .full { grid-column: 1 / -1; }
-    h2 { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 16px; letter-spacing: -.025em; color: #302c26; }
-    .section-index, .mono, code, pre, #rateLabel, #spokenPreview, #configPath { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-    .section-index { color: var(--n64-red); font-size: 12px; letter-spacing: .08em; }
-    p { color: var(--muted); line-height: 1.5; }
-    label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12px; color: #4f4941; margin: 14px 0 7px; letter-spacing: .01em; }
-    input, select, textarea {
+    .panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 8px; border-radius: 12px 0 0 12px; background: var(--accent-color, var(--blue)); box-shadow: inset 1px 0 0 rgba(255,255,255,.6); }
+    .panel.voice { --accent-color: var(--blue); }
+    .panel.sounds { --accent-color: var(--green); }
+    .panel.text { --accent-color: var(--yellow); }
+    .panel.preview-card { --accent-color: var(--blue); }
+    .panel.disclosure { --accent-color: var(--red); }
+    .panel-title { display: flex; align-items: baseline; gap: 16px; margin: 0 0 20px; font-family: var(--font-mono); }
+    .panel-title .idx { color: var(--accent-color, var(--blue)); font-size: 25px; font-weight: 900; }
+    .panel-title h2 { margin: 0; font-size: 25px; letter-spacing: -.05em; }
+    label { display: block; margin: 15px 0 8px; font-family: var(--font-mono); font-weight: 800; color: #15130f; }
+    .subtle { color: var(--muted); font-weight: 500; }
+    .sample-note { margin-left: auto; color: var(--muted); font-family: var(--font-mono); font-size: 13px; }
+    .field-line { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+    .control-row { display: grid; grid-template-columns: minmax(0, 1fr) 70px; gap: 20px; align-items: center; }
+    .search-field { position: relative; }
+    .search-field::before { content: "⌕"; position: absolute; left: 17px; top: 50%; transform: translateY(-52%); color: #4e4a43; font-size: 30px; line-height: 1; z-index: 1; }
+    input, textarea {
       width: 100%;
-      border: 1px solid var(--line-strong);
-      background: rgba(255, 253, 247, .86);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 11px 12px;
-      font: inherit;
+      border: 1px solid #8a8479;
+      background: linear-gradient(180deg, rgba(255,255,252,.92), rgba(234,230,220,.84));
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 14px 44px 14px 52px;
+      min-height: 54px;
+      font: 20px var(--font-mono);
+      letter-spacing: -.04em;
       outline: none;
-      transition: border-color .14s ease, box-shadow .14s ease, background .14s ease;
+      box-shadow: inset 1px 1px 0 rgba(255,255,255,.85), inset -1px -1px 0 rgba(74,70,63,.20);
     }
-    input:focus, select:focus, textarea:focus { border-color: rgba(47, 104, 216, .64); box-shadow: 0 0 0 3px rgba(47, 104, 216, .13), 0 0 18px rgba(241, 191, 40, .18); background: #fffdf7; }
-    input[list] { padding-right: 34px; background-image: linear-gradient(45deg, transparent 50%, var(--n64-gray-dark) 50%), linear-gradient(135deg, var(--n64-gray-dark) 50%, transparent 50%); background-position: calc(100% - 18px) 18px, calc(100% - 12px) 18px; background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
-    textarea { min-height: 92px; resize: vertical; }
-    input[type="range"] { padding: 0; accent-color: var(--n64-blue); }
-    .row { display: flex; gap: 10px; align-items: start; }
-    .row > * { flex: 1; min-width: 0; }
-    .sound-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; align-items: center; }
-    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    button {
-      border: 1px solid rgba(36, 33, 29, .16);
-      border-radius: 999px;
-      padding: 10px 15px;
-      background: linear-gradient(180deg, #ffe06c, var(--n64-yellow));
-      color: #1d1707;
-      font-weight: 900;
-      cursor: pointer;
-      letter-spacing: -.015em;
-      box-shadow: 0 10px 22px rgba(74,70,63,.18), inset 0 1px 0 rgba(255,255,255,.62);
-    }
-    button:hover { transform: translateY(-1px); }
-    button.secondary { background: linear-gradient(180deg, rgba(255,255,255,.62), rgba(201,197,187,.42)); color: var(--text); border: 1px solid var(--line-strong); box-shadow: inset 0 1px 0 rgba(255,255,255,.72); }
-    button.warn { background: linear-gradient(180deg, #5edb90, var(--n64-green)); color: #06140d; }
-    .icon-button { width: 43px; height: 43px; padding: 0; display: inline-grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 14px; background: rgba(255, 253, 247, .88); color: var(--n64-blue); box-shadow: inset 0 0 0 1px rgba(255,255,255,.46); }
-    .icon-button:hover { background: #fffdf7; color: #174fc1; }
-    .icon-button svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .icon-button.play svg { fill: currentColor; stroke: currentColor; }
+    input:focus, textarea:focus { border-color: var(--accent-color, var(--blue)); box-shadow: inset 1px 1px 0 rgba(255,255,255,.9), 0 0 0 3px rgba(47,104,216,.13); }
+    input[list] { background-image: linear-gradient(45deg, transparent 50%, #5f5a52 50%), linear-gradient(135deg, #5f5a52 50%, transparent 50%), linear-gradient(180deg, rgba(255,255,252,.92), rgba(234,230,220,.84)); background-position: calc(100% - 24px) 25px, calc(100% - 16px) 25px, 0 0; background-size: 8px 8px, 8px 8px, 100% 100%; background-repeat: no-repeat; }
+    textarea { min-height: 88px; resize: vertical; padding-left: 16px; }
+    .field-stack { display: grid; gap: 10px; }
+    .hint { margin: 17px 0 0; color: var(--muted); font-family: var(--font-mono); font-size: 14px; line-height: 1.45; }
+    code, .mono, #rateLabel { font-family: var(--font-mono); }
+    .rate-head { display: flex; justify-content: space-between; align-items: center; margin-top: 26px; }
+    input[type="range"] { min-height: auto; padding: 0; border: 0; background: transparent; box-shadow: none; accent-color: var(--blue); }
+    .range-scale { display: flex; justify-content: space-between; padding: 8px 2px 0; color: var(--muted); font-family: var(--font-mono); font-size: 13px; }
+    button { cursor: pointer; font-family: var(--font-mono); font-weight: 900; }
+    .icon-button { width: 70px; height: 62px; display: grid; place-items: center; padding: 0; border: 1px solid #827d73; border-radius: 8px; background: linear-gradient(180deg, #f2f0e8, #c8c4ba); color: var(--green); box-shadow: var(--bevel), 4px 4px 0 rgba(74,70,63,.22); }
+    .icon-button:hover { transform: translateY(-1px); }
+    .icon-button svg { width: 30px; height: 30px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-button.play svg { fill: currentColor; stroke: #1d4e24; }
     .icon-button .stop-icon { display: none; }
-    .icon-button.is-playing { background: rgba(221, 63, 70, .11); color: var(--n64-red); border-color: rgba(221, 63, 70, .42); }
+    .icon-button.is-playing { color: var(--red); }
     .icon-button.is-playing .play-icon { display: none; }
-    .icon-button.is-playing .stop-icon { display: block; }
-    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
-    .preview { margin-top: 14px; border: 1px solid var(--line-strong); border-radius: 18px; padding: 14px; background: rgba(255, 253, 247, .62); }
-    .preview strong { display: block; margin-bottom: 6px; color: #312d27; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
-    .hint { margin: 7px 0 0; font-size: 12px; color: var(--faint); }
-    .notice { border-color: rgba(47, 175, 101, .30); background: linear-gradient(180deg, rgba(47,175,101,.11), rgba(255,252,244,.88)); }
-    .notice p { margin: 0; color: #365344; }
-    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
-    .chip { border: 1px solid var(--line-strong); border-radius: 999px; padding: 6px 9px; color: var(--muted); background: rgba(255,255,255,.56); font-size: 12px; }
-    .chip.palette-note { border-color: rgba(109,105,98,.48); color: #4f4941; }
-    pre { white-space: pre-wrap; background: rgba(255,253,247,.72); border: 1px solid var(--line-strong); border-radius: 16px; padding: 14px; min-height: 118px; max-height: 360px; overflow: auto; color: #3b3630; font-size: 12px; }
-    @media (max-width: 820px) {
-      main { padding: 24px 14px 40px; }
-      .hero, .grid { grid-template-columns: 1fr; }
-      .status-pill { justify-self: stretch; }
-      .full { grid-column: auto; }
-      .row { flex-direction: column; }
+    .icon-button.is-playing .stop-icon { display: block; fill: currentColor; stroke: #6b2b26; }
+    .preview-screen { position: relative; min-height: 204px; padding: 16px 68px 16px 18px; border: 1px solid #8a8479; border-radius: 8px; background-color: rgba(255,255,250,.62); background-image: linear-gradient(rgba(72,68,60,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(72,68,60,.05) 1px, transparent 1px); background-size: 18px 18px; font: 17px var(--font-mono); box-shadow: inset 1px 1px 0 rgba(255,255,255,.82); }
+    .preview-row { display: grid; grid-template-columns: 78px minmax(0,1fr); gap: 12px; margin: 3px 0; }
+    .preview-row span { color: var(--blue); font-weight: 900; }
+    .preview-row.green span { color: var(--green); }
+    .preview-row b { font-weight: 500; overflow-wrap: anywhere; }
+    .speaker-button { position: absolute; right: 12px; bottom: 10px; width: 54px; height: 44px; border: 1px solid #827d73; border-radius: 6px; background: linear-gradient(180deg, #f3f1e9, #cac6bc); box-shadow: var(--bevel), 2px 2px 0 rgba(74,70,63,.22); color: #302c26; }
+    .info-box { display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; font: 17px/1.45 var(--font-mono); }
+    .info-icon { width: 50px; height: 46px; display: grid; place-items: center; border: 1px solid #837d72; border-radius: 6px; background: linear-gradient(180deg, #f4f2eb, #cbc7bd); box-shadow: var(--bevel); font: 900 28px var(--font-mono); }
+    .footer { display: grid; grid-template-columns: 80px 1fr 1fr 1.05fr 1fr 80px; gap: 26px; align-items: center; padding: 30px 28px; border-top: 1px solid #817b70; background: linear-gradient(180deg, #d7d3ca, #c5c0b5); }
+    .vent { height: 66px; background: repeating-linear-gradient(180deg, #736e65 0 4px, transparent 4px 12px); opacity: .75; border-radius: 6px; }
+    .big-button { min-height: 76px; border: 1px solid #827d73; border-radius: 10px; box-shadow: var(--bevel), 5px 5px 0 rgba(74,70,63,.25); font-size: 17px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 16px; color: var(--ink); background: linear-gradient(180deg, #f1eee6, #c9c5bb); }
+    .big-button.primary { background: linear-gradient(180deg, #4c7fea, #2f62ce); color: #fff9ef; }
+    .big-button.success { background: linear-gradient(180deg, #62ad68, #3d8c45); color: #fff9ef; }
+    .big-button.preset { background: linear-gradient(180deg, #ffd95c, #edba25); }
+    .button-icon { font-size: 30px; line-height: 1; }
+    .sr-status { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+    @media (max-width: 980px) {
+      main { padding: 10px; }
+      .topbar, .deck, .lower, .footer { grid-template-columns: 1fr; }
+      .topbar { padding: 24px; }
+      .stripe-stack, .status-module { justify-self: start; }
+      .footer { gap: 14px; }
+      .vent { display: none; }
     }
   </style>
 </head>
 <body>
 <main>
-  <header class="hero">
-    <div>
-      <p class="eyebrow">local macOS control panel</p>
-      <h1>agentic-coding-notify</h1>
-      <p class="subtitle">Local notification preferences for agent apps and CLIs: voice, speech rate, sounds, spoken templates, and test runs.</p>
-    </div>
-    <div class="status-pill" aria-label="Local UI endpoint">
-      <span>local UI</span>
-      <strong>127.0.0.1:8765</strong>
-      <div class="palette-strip" aria-label="N64 gray palette">
-        <i class="swatch gray"></i>
-        <i class="swatch blue"></i>
-        <i class="swatch green"></i>
-        <i class="swatch yellow"></i>
-        <i class="swatch red"></i>
+  <div class="console">
+    <header class="topbar">
+      <div class="stripe-stack" aria-label="N64 gray palette">
+        <i class="stripe blue"></i>
+        <i class="stripe green"></i>
+        <i class="stripe yellow"></i>
+        <i class="stripe red"></i>
       </div>
-    </div>
-  </header>
-
-  <div class="grid">
-    <section class="card">
-      <h2><span class="section-index">01</span>Voice</h2>
-      <label for="voice">Voice</label>
-      <div class="sound-row">
-        <input id="voice" list="voice_options" autocomplete="off" placeholder="Type to filter voices" />
-        <datalist id="voice_options"></datalist>
-        <button id="voice_toggle" class="icon-button play" title="Play voice sample" aria-label="Play voice sample" onclick="toggleVoice()">
-          <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
-          <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
-          <span class="sr-only">Play</span>
-        </button>
+      <div>
+        <h1>agentic-coding-notify</h1>
+        <p class="subtitle">Local notification preferences for agent apps and CLIs.</p>
       </div>
-      <p class="hint">Voice samples say <code>Agentic Coding Notify</code>.</p>
-
-      <label for="rate">Speech rate <span id="rateLabel"></span></label>
-      <input id="rate" type="range" min="80" max="420" step="5" />
-      <p class="hint">macOS <code>say -r</code> uses words per minute. <code>250</code> is roughly <code>1.25x</code> a <code>200</code> wpm baseline.</p>
-    </section>
-
-    <section class="card">
-      <h2><span class="section-index">02</span>Sounds</h2>
-      <label for="notification_sound">Notification sound</label>
-      <div class="sound-row">
-        <input id="notification_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
-        <datalist id="sound_options"></datalist>
-        <button id="notification_sound_toggle" class="icon-button play" title="Play notification sample" aria-label="Play notification sample" onclick="toggleSound('notification_sound')">
-          <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
-          <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
-          <span class="sr-only">Play</span>
-        </button>
+      <div class="status-module" aria-label="Status ready">
+        <span>Status</span>
+        <strong>READY</strong>
       </div>
+      <button class="stop-top" onclick="stopAllSounds()">
+        <span class="stop-light"><i></i></span>
+        <span>Stop all<br>samples</span>
+      </button>
+    </header>
+    <div class="divider" aria-hidden="true"></div>
 
-      <div class="row">
-        <div>
-          <label for="start_sound">Start sound</label>
-          <div class="sound-row">
-            <input id="start_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
-            <button id="start_sound_toggle" class="icon-button play" title="Play start sample" aria-label="Play start sample" onclick="toggleSound('start_sound')">
-              <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
-              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
-              <span class="sr-only">Play</span>
-            </button>
+    <div class="deck">
+      <section class="panel voice">
+        <div class="panel-title"><span class="idx">01</span><h2>Voice</h2></div>
+        <div class="field-line">
+          <label for="voice">Voice <span class="subtle">(type to search)</span></label>
+          <span class="sample-note">Sample “Agentic Coding Notify”</span>
+        </div>
+        <div class="control-row">
+          <div class="search-field">
+            <input id="voice" list="voice_options" autocomplete="off" placeholder="Type to filter voices" />
+            <datalist id="voice_options"></datalist>
+          </div>
+          <button id="voice_toggle" class="icon-button play" title="Play voice sample" aria-label="Play voice sample" onclick="toggleVoice()">
+            <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+            <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+            <span class="sr-only">Play</span>
+          </button>
+        </div>
+        <div class="rate-head">
+          <label for="rate">Speech rate</label>
+          <span id="rateLabel"></span>
+        </div>
+        <input id="rate" type="range" min="80" max="420" step="5" />
+        <div class="range-scale"><span>100</span><span>200</span><span>300</span><span>400</span></div>
+        <p class="hint">macOS <code>say -r</code> uses words per minute. <code>250</code> is roughly <code>1.25x</code> a <code>200</code> wpm baseline.</p>
+      </section>
+
+      <section class="panel sounds">
+        <div class="panel-title"><span class="idx">02</span><h2>Sounds</h2></div>
+        <div class="field-stack">
+          <div>
+            <label for="notification_sound">Notification sound <span class="subtle">(type to search)</span></label>
+            <div class="control-row">
+              <div class="search-field">
+                <input id="notification_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
+                <datalist id="sound_options"></datalist>
+              </div>
+              <button id="notification_sound_toggle" class="icon-button play" title="Play notification sample" aria-label="Play notification sample" onclick="toggleSound('notification_sound')">
+                <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+                <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+                <span class="sr-only">Play</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label for="start_sound">Start sound <span class="subtle">(type to search)</span></label>
+            <div class="control-row">
+              <div class="search-field"><input id="start_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" /></div>
+              <button id="start_sound_toggle" class="icon-button play" title="Play start sample" aria-label="Play start sample" onclick="toggleSound('start_sound')">
+                <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+                <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+                <span class="sr-only">Play</span>
+              </button>
+            </div>
+          </div>
+          <div>
+            <label for="end_sound">End sound <span class="subtle">(type to search)</span></label>
+            <div class="control-row">
+              <div class="search-field"><input id="end_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" /></div>
+              <button id="end_sound_toggle" class="icon-button play" title="Play end sample" aria-label="Play end sample" onclick="toggleSound('end_sound')">
+                <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
+                <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
+                <span class="sr-only">Play</span>
+              </button>
+            </div>
           </div>
         </div>
-        <div>
-          <label for="end_sound">End sound</label>
-          <div class="sound-row">
-            <input id="end_sound" list="sound_options" autocomplete="off" placeholder="Type to filter sounds" />
-            <button id="end_sound_toggle" class="icon-button play" title="Play end sample" aria-label="Play end sample" onclick="toggleSound('end_sound')">
-              <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="8 5 19 12 8 19 8 5"></polygon></svg>
-              <svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1"></rect></svg>
-              <span class="sr-only">Play</span>
-            </button>
+      </section>
+
+      <div class="lower">
+        <section class="panel text">
+          <div class="panel-title"><span class="idx">03</span><h2>Text</h2></div>
+          <label for="app_voice_text_template">App template <span class="subtle">(type to search)</span></label>
+          <div class="search-field"><input id="app_voice_text_template" list="template_options" autocomplete="off" /></div>
+          <datalist id="template_options"></datalist>
+          <label for="cli_voice_text_template">CLI template <span class="subtle">(type to search)</span></label>
+          <div class="search-field"><input id="cli_voice_text_template" list="template_options" autocomplete="off" /></div>
+          <label for="voice_text_template">Override spoken text <span class="subtle">(type to search)</span></label>
+          <div class="search-field"><input id="voice_text_template" list="template_options" autocomplete="off" placeholder="(optional) custom text..." /></div>
+        </section>
+
+        <section class="panel preview-card">
+          <div class="panel-title"><span class="idx">04</span><h2>Preview</h2></div>
+          <div class="preview-screen">
+            <div class="preview-row"><span>VOICE :</span><b id="previewVoice"></b></div>
+            <div class="preview-row"><span>RATE :</span><b id="previewRate"></b></div>
+            <div class="preview-row green"><span>NOTIF:</span><b id="previewNotification"></b></div>
+            <div class="preview-row green"><span>START:</span><b id="previewStart"></b></div>
+            <div class="preview-row green"><span>END :</span><b id="previewEnd"></b></div>
+            <div class="preview-row"><span>TEXT :</span><b id="spokenPreview"></b></div>
+            <div class="preview-row"><span>SERVICE:</span><b id="previewService"></b></div>
+            <div class="preview-row"><span>TAB :</span><b id="previewTab"></b></div>
+            <button class="speaker-button" title="Play voice sample" aria-label="Play voice sample from preview" onclick="playVoice()">🔊</button>
           </div>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="secondary" onclick="applyClassicPreset()">Classic preset</button>
-        <button class="secondary" onclick="stopAllSounds()">Stop all samples</button>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2><span class="section-index">03</span>Text</h2>
-      <label for="app_voice_text_template">App template</label>
-      <input id="app_voice_text_template" />
-      <p class="hint">Default classic style: <code>{service} App</code> → Claude App / Codex App.</p>
-
-      <label for="cli_voice_text_template">CLI template</label>
-      <input id="cli_voice_text_template" />
-      <p class="hint">Default classic style: <code>{service} {label}</code> → Codex review / Claude api.</p>
-
-      <label for="voice_text_template">Override spoken text</label>
-      <input id="voice_text_template" placeholder="Leave blank to use app/CLI templates" />
-      <p class="hint">Placeholders: <code>{service}</code>, <code>{label}</code>, <code>{voice_label}</code>, <code>{message}</code>, <code>{context}</code>.</p>
-    </section>
-
-    <section class="card notice">
-      <h2><span class="section-index">04</span>Disclosure</h2>
-      <p>Apps do not need terminal labels. CLI sessions can use short tab labels like <code>One</code>, <code>Two</code>, or <code>Three</code>; the plugin already detects the service.</p>
-      <div class="chips" aria-label="Supported contexts">
-        <span class="chip">Claude App</span>
-        <span class="chip">Codex App</span>
-        <span class="chip">Agent CLIs</span>
-        <span class="chip palette-note">N64 gray palette</span>
-      </div>
-    </section>
-
-    <section class="card full">
-      <h2><span class="section-index">05</span>Preview</h2>
-      <div class="grid">
-        <div>
-          <label for="service">Service</label>
-          <input id="service" list="service_options" autocomplete="off" value="Claude App" placeholder="Type to filter services" />
+          <p class="hint" id="soundPreview"></p>
+          <label for="service">Service <span class="subtle">(type to search)</span></label>
+          <div class="search-field"><input id="service" list="service_options" autocomplete="off" value="Claude App" placeholder="Type to filter services" /></div>
           <datalist id="service_options"></datalist>
-        </div>
-        <div>
-          <label for="label">CLI tab/profile label</label>
+          <label for="label">CLI tab label</label>
           <input id="label" value="review" />
-          <p class="hint">Tip: in terminal, rename tabs to simple labels like <code>One</code>, <code>Two</code>, or <code>Three</code>. The plugin already detects the CLI service; the tab name just helps you track which session called.</p>
-        </div>
-      </div>
-      <label for="message">Notification message</label>
-      <textarea id="message">Teste do agentic-coding-notify</textarea>
-      <div class="preview">
-        <strong>Will say</strong>
-        <code id="spokenPreview"></code>
-        <p class="hint" id="soundPreview"></p>
-      </div>
-      <div class="actions">
-        <button onclick="saveConfig()">Save config</button>
-        <button class="secondary" onclick="testNotify(true)">Dry-run JSON</button>
-        <button class="warn" onclick="testNotify(false)">Real notification</button>
-      </div>
-    </section>
+          <label for="message">Notification message</label>
+          <textarea id="message">Teste do agentic-coding-notify</textarea>
+        </section>
 
-    <section class="card full">
-      <h2><span class="section-index">06</span>Status</h2>
-      <p class="hint">Config path: <code id="configPath"></code></p>
-      <pre id="status">Loading…</pre>
-    </section>
+        <section class="panel disclosure">
+          <div class="panel-title"><span class="idx">05</span><h2>Disclosure</h2></div>
+          <div class="info-box">
+            <div class="info-icon">i</div>
+            <p>Apps do not need terminal labels.<br><br>CLI sessions can use short tab labels like <code>One</code>, <code>Two</code>, or <code>Three</code>; the plugin already detects the service.</p>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="divider" aria-hidden="true"></div>
+    <footer class="footer">
+      <div class="vent"></div>
+      <button class="big-button primary" onclick="saveConfig()"><span class="button-icon">💾</span> Save Config</button>
+      <button class="big-button" onclick="testNotify(true)"><span class="button-icon">{}</span> Dry-run JSON</button>
+      <button class="big-button success" onclick="testNotify(false)"><span class="button-icon">🔔</span> Real Notification</button>
+      <button class="big-button preset" onclick="applyClassicPreset()"><span class="button-icon">☆</span> Classic Preset</button>
+      <div class="vent"></div>
+    </footer>
+    <pre id="status" class="sr-status">Loading…</pre>
+    <code id="configPath" class="sr-status"></code>
   </div>
 </main>
 <script>
@@ -341,6 +363,7 @@ const fields = ["voice", "rate", "notification_sound", "start_sound", "end_sound
 const soundFields = ["notification_sound", "start_sound", "end_sound"];
 const serviceOptions = ["Claude App", "Codex App", "Claude CLI", "Codex CLI", "OpenCode CLI", "Pi CLI"];
 const voiceSampleText = "Agentic Coding Notify";
+const templateOptions = ["{service} App", "{service} {label}", "{service} CLI", "{voice_label}", "Agentic Coding Notify", ""];
 let options = { voices: [], sounds: [] };
 let isLoading = true;
 let sampleState = {};
@@ -412,9 +435,22 @@ function computeSpokenPreview() {
     message: $("message").value
   });
 }
+function setPreviewText(id, value) {
+  const el = $(id);
+  if (el) el.textContent = value;
+}
 function updatePreview() {
-  $("spokenPreview").textContent = computeSpokenPreview();
-  $("soundPreview").textContent = `Voice: ${$("voice").value} @ ${$("rate").value} wpm · start: ${$("start_sound").value} · notification: ${$("notification_sound").value} · end: ${$("end_sound").value}`;
+  const parts = selectedServiceParts();
+  const rate = $("rate").value;
+  setPreviewText("spokenPreview", computeSpokenPreview());
+  setPreviewText("previewVoice", $("voice").value);
+  setPreviewText("previewRate", `${rate} wpm (~${(Number(rate || 250) / 200).toFixed(2)}x)`);
+  setPreviewText("previewNotification", $("notification_sound").value);
+  setPreviewText("previewStart", $("start_sound").value);
+  setPreviewText("previewEnd", $("end_sound").value);
+  setPreviewText("previewService", parts.raw || "(auto)");
+  setPreviewText("previewTab", $("label").value || "(auto)");
+  $("soundPreview").textContent = `Voice: ${$("voice").value} @ ${rate} wpm · start: ${$("start_sound").value} · notification: ${$("notification_sound").value} · end: ${$("end_sound").value}`;
 }
 function applyClassicPreset() {
   setConfig(classicPreset);
@@ -425,6 +461,7 @@ async function load() {
   fillDatalist("voice_options", options.voices);
   fillDatalist("sound_options", ["none", ...options.sounds]);
   fillDatalist("service_options", serviceOptions);
+  fillDatalist("template_options", templateOptions);
   $("configPath").textContent = options.config_path;
   const cfg = await (await fetch("/api/config")).json();
   setConfig(cfg);
