@@ -173,6 +173,7 @@ html = urllib.request.urlopen("http://127.0.0.1:18765/", timeout=3).read().decod
 assert "Disclosure" in html
 assert "JetBrains Mono" in html
 assert "Apps do not need terminal labels" in html
+assert "N64-inspired palette" in html
 config = request("/api/config")
 assert config["voice"] == "Zarvox"
 saved = request("/api/config", config)

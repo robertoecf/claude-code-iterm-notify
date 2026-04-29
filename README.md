@@ -45,7 +45,7 @@ Run the local web UI:
 python3 web/notify_ui.py --open
 ```
 
-Then use `http://127.0.0.1:8765` to choose. The UI is a compact dark dashboard; numeric/status values use JetBrains Mono when available, with system fallbacks.
+Then use `http://127.0.0.1:8765` to choose. The UI is a compact dark dashboard with an N64-inspired retro palette; numeric/status values use JetBrains Mono when available, with system fallbacks. It does not import external CSS or art assets.
 
 - spoken text templates for app and CLI contexts
 - macOS `say` voice
