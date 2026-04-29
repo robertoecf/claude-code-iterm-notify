@@ -46,13 +46,15 @@ The Claude adapter stays backward-compatible with the existing plugin layout.
 From a local directory:
 
 ```bash
-claude plugin install /path/to/claude-code-notify
+claude plugin marketplace add /path/to/agentic-coding-notify
+claude plugin install claude-code-notify@agentic-coding-notify
 ```
 
 From GitHub:
 
 ```bash
-claude plugin install github:robertoecf/agentic-coding-notify
+claude plugin marketplace add github:robertoecf/agentic-coding-notify
+claude plugin install claude-code-notify@agentic-coding-notify
 ```
 
 Restart Claude Code after installing or updating. Claude loads hooks at session start.

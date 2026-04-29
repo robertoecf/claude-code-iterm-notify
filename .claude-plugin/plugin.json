@@ -1,7 +1,7 @@
 {
   "name": "claude-code-notify",
-  "version": "2.2.1",
-  "description": "macOS desktop notifications with sound and voice alerts for Claude Code. This repo also ships a dedicated Codex adapter with its own installation flow.",
+  "version": "2.2.2",
+  "description": "macOS desktop notifications with sound and voice alerts for Claude Code. This repo also ships dedicated adapters for Codex, OpenCode, and Pi.",
   "author": {
     "name": "Roberto",
     "email": "robertoecf@gmail.com"
