@@ -108,7 +108,21 @@ fallback_output="$(
 assert_eq "$(field "$fallback_output" label)"       "wealthuman-os"              "fallback label"
 assert_eq "$(field "$fallback_output" voice_label)" "Codex terminou em wealthuman-os" "fallback voice"
 
-# 6) Short label (<4 chars) falls back to plain "Codex terminou".
+# 6) CODEX_DESKTOP explicitly produces the app label even without process-tree detection.
+: > "$TMP_COOLDOWN"
+rm -f "$TMP_COOLDOWN"
+desktop_env_output="$(
+  env -u TERM_PROGRAM \
+    NOTIFY_TEST_MODE=1 \
+    CODEX_DESKTOP=1 \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_COOLDOWN" \
+    "$SCRIPT_PATH" \
+    '{"type":"agent-turn-complete","cwd":"/tmp/wealthuman-os","last-assistant-message":"qualquer coisa"}'
+)"
+assert_eq "$(field "$desktop_env_output" label)"       "Codex App"          "desktop env label"
+assert_eq "$(field "$desktop_env_output" voice_label)" "Codex terminou no app" "desktop env voice"
+
+# 7) Short label (<4 chars) falls back to plain "Codex terminou".
 : > "$TMP_COOLDOWN"
 rm -f "$TMP_COOLDOWN"
 short_label_output="$(
@@ -120,7 +134,7 @@ short_label_output="$(
 )"
 assert_eq "$(field "$short_label_output" voice_label)" "Codex terminou" "short label voice"
 
-# 7) Cowork env triggers the Cowork voice.
+# 8) Cowork env triggers the Cowork voice.
 : > "$TMP_COOLDOWN"
 rm -f "$TMP_COOLDOWN"
 cowork_output="$(
@@ -134,14 +148,14 @@ cowork_output="$(
 assert_eq "$(field "$cowork_output" label)"       "Cowork"                   "cowork label"
 assert_eq "$(field "$cowork_output" voice_label)" "Codex terminou no Cowork" "cowork voice"
 
-# 8) Installer prints the expected notify line.
+# 9) Installer prints the expected notify line.
 config_output="$("$INSTALLER_PATH" --print-config "/tmp/codex-notify.sh")"
 expected_line='notify = ["/tmp/codex-notify.sh"]'
 if ! printf '%s\n' "$config_output" | grep -Fqx "$expected_line"; then
   fail "installer config output missing notify line"
 fi
 
-# 9) Unsupported future event types are skipped cleanly (no stdout in test mode).
+# 10) Unsupported future event types are skipped cleanly (no stdout in test mode).
 : > "$TMP_COOLDOWN"
 rm -f "$TMP_COOLDOWN"
 skip_output="$(

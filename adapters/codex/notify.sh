@@ -83,6 +83,7 @@ parsed="$(
   TERM_PROGRAM_VALUE="${TERM_PROGRAM:-}" \
   ITERM_SESSION_VALUE="${ITERM_SESSION_ID:-}" \
   CODEX_IS_COWORK_VALUE="${CODEX_IS_COWORK:-}" \
+  CODEX_DESKTOP_VALUE="${CODEX_DESKTOP:-}" \
   CLAUDE_CODE_IS_COWORK_VALUE="${CLAUDE_CODE_IS_COWORK:-}" \
   PARENT_PROCESS_TREE="$parent_process_tree" \
   PREVIEW_CHARS="$MESSAGE_PREVIEW_CHARS" \
@@ -96,6 +97,7 @@ term_program = os.environ.get("TERM_PROGRAM_VALUE", "").strip()
 iterm_session = os.environ.get("ITERM_SESSION_VALUE", "").strip()
 parent_process_tree = os.environ.get("PARENT_PROCESS_TREE", "")
 codex_is_cowork = os.environ.get("CODEX_IS_COWORK_VALUE", "")
+codex_desktop = os.environ.get("CODEX_DESKTOP_VALUE", "")
 claude_code_is_cowork = os.environ.get("CLAUDE_CODE_IS_COWORK_VALUE", "")
 try:
     preview_chars = max(40, int(os.environ.get("PREVIEW_CHARS", "160")))
@@ -162,6 +164,8 @@ def normalized_term_program(value: str) -> str:
 
 
 def fallback_label() -> str:
+    if codex_desktop == "1":
+        return "Codex App"
     if is_codex_app_process_tree(parent_process_tree):
         return "Codex App"
     normalized_term = normalized_term_program(term_program)
