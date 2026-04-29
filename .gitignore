@@ -2,3 +2,7 @@
 *.swp
 *.log
 memory/
+.agents/
+.claude/
+skills-lock.json
+claude-macos-notify-debug.md

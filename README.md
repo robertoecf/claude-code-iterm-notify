@@ -1,8 +1,10 @@
-# claude-code-notify
+# agentic-coding-notify
 
 macOS notifications with sound and voice alerts for agent CLIs.
 
-The repository still ships the original **Claude Code plugin**, and now also includes a dedicated **Codex adapter**. They live in one repo, but each environment keeps its own entrypoint and installation flow.
+The repository still ships the original **Claude Code plugin**, and now also includes dedicated adapters for **Codex**, **OpenCode**, and **Pi**. They live in one repo, but each environment keeps its own entrypoint and installation flow.
+
+The Claude plugin name remains `claude-code-notify` for compatibility with existing installs.
 
 ## Adapters
 
@@ -10,6 +12,8 @@ The repository still ships the original **Claude Code plugin**, and now also inc
 |---|---|---|
 | Claude Code | `hooks/scripts/notify.sh` | Claude plugin |
 | Codex | `adapters/codex/notify.sh` | `~/.codex/config.toml` `notify` command |
+| OpenCode | `adapters/opencode/notify.sh` | adapter install script |
+| Pi | `adapters/pi/notify.sh` | adapter install script |
 
 ## What you get
 
@@ -48,7 +52,7 @@ claude plugin install /path/to/claude-code-notify
 From GitHub:
 
 ```bash
-claude plugin install github:robertoecf/claude-code-iterm-notify
+claude plugin install github:robertoecf/agentic-coding-notify
 ```
 
 Restart Claude Code after installing or updating. Claude loads hooks at session start.
@@ -182,7 +186,13 @@ When a session needs attention, the voice will use the profile name when it can 
 ├── adapters
 │   ├── claude
 │   │   └── notify.sh
-│   └── codex
+│   ├── codex
+│   │   ├── install.sh
+│   │   └── notify.sh
+│   ├── opencode
+│   │   ├── install.sh
+│   │   └── notify.sh
+│   └── pi
 │       ├── install.sh
 │       └── notify.sh
 ├── hooks

@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ADAPTER_NAME="pi"
 NOTIFY_SCRIPT="$SCRIPT_DIR/notify.sh"
-TARGET_DIR="${PI_PLUGIN_ROOT:-$HOME/.config/superpowers/worktrees/claude-code-iterm-notify/codex-notify}"
+TARGET_DIR="${PI_PLUGIN_ROOT:-$HOME/.config/superpowers/worktrees/agentic-coding-notify/codex-notify}"
 
 echo "Installing Pi notification adapter..."
 
