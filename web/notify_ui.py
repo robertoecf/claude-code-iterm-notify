@@ -414,6 +414,8 @@ HTML = r"""
       letter-spacing: -.035em;
     }
     .toast-panel.is-error { color: var(--red); }
+    /* Legacy message field guard: this UI does not collect user/system notification text. */
+    label[for="message"], #message { display: none !important; }
     .sr-only, .sr-status { position: absolute; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; clip: rect(0 0 0 0); white-space: nowrap; }
     @media (max-width: 980px) {
       main { padding: 10px; }
@@ -678,6 +680,10 @@ function humanStatus(value) {
   if (value.error) return `Error: ${value.error}`;
   if (value.ok) return "Done.";
   return "Updated.";
+}
+function removeLegacyMessageField() {
+  document.querySelector('label[for="message"]')?.remove();
+  document.getElementById("message")?.remove();
 }
 function status(value) {
   $("status").textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
