@@ -76,6 +76,15 @@ notify_end_sound_path() {
   notify_sound_path end_sound "${1:-/System/Library/Sounds/Submarine.aiff}"
 }
 
+notify_speak_tab_title() {
+  local value
+  value="$(notify_config_field speak_tab_title "true")"
+  case "$value" in
+    false|False|FALSE|0|no|No|NO|off|Off|OFF) printf 'false' ;;
+    *) printf 'true' ;;
+  esac
+}
+
 notify_context_kind() {
   local label="$1"
   case "$label" in
@@ -89,8 +98,15 @@ notify_effective_voice_text() {
   local label="$2"
   local default_voice_label="$3"
   local message="${4:-}"
-  local context template
+  local context template speak_tab_title spoken_label voice_label_value
   context="$(notify_context_kind "$label")"
+  speak_tab_title="$(notify_speak_tab_title)"
+  spoken_label="$label"
+  voice_label_value="$default_voice_label"
+  if [ "$context" = "cli" ] && [ "$speak_tab_title" = "false" ]; then
+    spoken_label=""
+    voice_label_value="$service"
+  fi
 
   template="$(notify_config_field voice_text_template "")"
   if [ -z "$template" ]; then
@@ -102,8 +118,8 @@ notify_effective_voice_text() {
   fi
 
   SERVICE_VALUE="$service" \
-  LABEL_VALUE="$label" \
-  VOICE_LABEL_VALUE="$default_voice_label" \
+  LABEL_VALUE="$spoken_label" \
+  VOICE_LABEL_VALUE="$voice_label_value" \
   MESSAGE_VALUE="$message" \
   TEMPLATE_VALUE="$template" \
   CONTEXT_VALUE="$context" \

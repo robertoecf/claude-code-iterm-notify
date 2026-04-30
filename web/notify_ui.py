@@ -35,6 +35,7 @@ DEFAULT_CONFIG = {
     "app_voice_text_template": "{service} App",
     "cli_voice_text_template": "{service} {label}",
     "voice_text_template": "",
+    "speak_tab_title": "true",
 }
 
 HTML = r"""
@@ -276,6 +277,17 @@ HTML = r"""
       border-color: rgba(63,148,73,.30);
       background: linear-gradient(180deg, rgba(238,247,224,.76), rgba(220,236,205,.66));
     }
+    .switch-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 15px; padding: 12px 13px; border: 1px solid #8a8479; border-radius: 10px; background: linear-gradient(180deg, rgba(255,255,252,.72), rgba(234,230,220,.64)); box-shadow: inset 1px 1px 0 rgba(255,255,255,.74); font-family: var(--font-mono); }
+    .switch-copy { min-width: 0; }
+    .switch-title { display: block; font-weight: 900; color: #15130f; }
+    .switch-note { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .switch { position: relative; display: inline-flex; align-items: center; flex: 0 0 auto; width: 64px; height: 34px; }
+    .switch input { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; margin: 0; opacity: 0; cursor: pointer; }
+    .switch-slider { position: absolute; inset: 0; border: 1px solid #827d73; border-radius: 999px; background: linear-gradient(180deg, #d7d3ca, #aaa59a); box-shadow: var(--bevel), inset 0 0 0 2px rgba(74,70,63,.08); }
+    .switch-slider::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border: 1px solid #827d73; border-radius: 50%; background: linear-gradient(180deg, #fffaf0, #cbc7bd); box-shadow: 2px 2px 0 rgba(74,70,63,.22); transition: transform .15s ease; }
+    .switch input:checked + .switch-slider { background: linear-gradient(180deg, #62ad68, #3d8c45); }
+    .switch input:checked + .switch-slider::after { transform: translateX(30px); }
+    .switch input:focus-visible + .switch-slider { outline: 3px solid rgba(47,104,216,.24); outline-offset: 2px; }
     .combo-empty {
       padding: 11px;
       color: var(--muted);
@@ -558,6 +570,16 @@ HTML = r"""
 	          <div class="search-field combo-field" data-combo="templates"><input id="cli_voice_text_template" class="combo-input" autocomplete="off" /><div class="combo-list" role="listbox"></div></div>
           <label for="voice_text_template">Override spoken text <span class="subtle">(type to search)</span></label>
 	          <div class="search-field combo-field" data-combo="templates"><input id="voice_text_template" class="combo-input" autocomplete="off" placeholder="(optional) custom text..." /><div class="combo-list" role="listbox"></div></div>
+          <div class="switch-row" data-tooltip="When off, CLI notifications still use the service name but omit the terminal tab label from spoken text.">
+            <div class="switch-copy">
+              <span class="switch-title">Speak terminal tab title</span>
+              <span class="switch-note">CLI only; app sessions still speak the app name.</span>
+            </div>
+            <label class="switch" for="speak_tab_title">
+              <input id="speak_tab_title" type="checkbox" checked />
+              <span class="switch-slider" aria-hidden="true"></span>
+            </label>
+          </div>
         </section>
 
         <section class="panel preview-card">
@@ -611,7 +633,7 @@ HTML = r"""
   </div>
 </main>
 <script>
-const fields = ["voice", "rate", "notification_sound", "start_sound", "end_sound", "app_voice_text_template", "cli_voice_text_template", "voice_text_template"];
+const fields = ["voice", "rate", "notification_sound", "start_sound", "end_sound", "app_voice_text_template", "cli_voice_text_template", "voice_text_template", "speak_tab_title"];
 const soundFields = ["notification_sound", "start_sound", "end_sound"];
 const serviceOptions = ["Claude App", "Codex App", "Claude CLI", "Codex CLI", "OpenCode CLI", "Pi CLI"];
 const voiceSampleText = "Agentic Coding Notify";
@@ -632,7 +654,8 @@ const classicPreset = {
   end_sound: "Submarine",
   app_voice_text_template: "{service} App",
   cli_voice_text_template: "{service} {label}",
-  voice_text_template: ""
+  voice_text_template: "",
+  speak_tab_title: "true"
 };
 
 function $(id) { return document.getElementById(id); }
@@ -668,7 +691,10 @@ function status(value) {
 }
 function currentConfig() {
   const cfg = {};
-  for (const f of fields) cfg[f] = $(f).value;
+  for (const f of fields) {
+    const el = $(f);
+    cfg[f] = el.type === "checkbox" ? String(el.checked) : el.value;
+  }
   return cfg;
 }
 function comboItems(kind) {
@@ -964,9 +990,18 @@ function setupComboboxes() {
     });
   }
 }
+function configBool(value, fallback = true) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return !["false", "0", "no", "off"].includes(String(value).toLowerCase());
+}
 function setConfig(cfg) {
   isLoading = true;
-  for (const f of fields) if ($(f)) $(f).value = cfg[f] ?? "";
+  for (const f of fields) {
+    const el = $(f);
+    if (!el) continue;
+    if (el.type === "checkbox") el.checked = configBool(cfg[f], true);
+    else el.value = cfg[f] ?? "";
+  }
   updateRateLabel();
   updatePreview();
   isLoading = false;
@@ -994,13 +1029,15 @@ function renderTemplate(template, values) {
 }
 function computeSpokenPreview() {
   const parts = selectedServiceParts();
-  const fallback = parts.context === "app" ? parts.label : `${parts.service} ${parts.label}`;
+  const speakTabTitle = configBool($("speak_tab_title").checked, true);
+  const spokenLabel = parts.context === "cli" && !speakTabTitle ? "" : parts.label;
+  const fallback = parts.context === "app" ? parts.label : [parts.service, spokenLabel].filter(Boolean).join(" ");
   const template = $("voice_text_template").value || (parts.context === "app" ? $("app_voice_text_template").value : $("cli_voice_text_template").value);
   return renderTemplate(template, {
     service: parts.service,
-    label: parts.label,
+    label: spokenLabel,
     context: parts.context,
-    voice_label: fallback,
+    voice_label: fallback || parts.service,
     message: $("message").value
   });
 }

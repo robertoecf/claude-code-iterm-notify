@@ -82,6 +82,30 @@ codex_output="$(
 assert_eq "$(field "$codex_output" label)" "Codex App" "Codex hook label"
 assert_eq "$(field "$codex_output" voice_label)" "Codex App terminou" "Codex hook voice"
 
+cat >"$TMP_DIR/no-tab-title-config.json" <<'JSON'
+{
+  "voice": "Zarvox",
+  "rate": "250",
+  "notification_sound": "Submarine",
+  "start_sound": "Basso",
+  "end_sound": "Submarine",
+  "app_voice_text_template": "{service} App",
+  "cli_voice_text_template": "{service} {label}",
+  "voice_text_template": "",
+  "speak_tab_title": "false"
+}
+JSON
+codex_no_tab_output="$(
+  env NOTIFY_TEST_MODE=1 \
+    AGENTIC_CODING_NOTIFY_CONFIG="$TMP_DIR/no-tab-title-config.json" \
+    CODEX_NOTIFY_LOG="$TMP_DIR/codex-no-tab.log" \
+    CODEX_NOTIFY_COOLDOWN_FILE="$TMP_DIR/codex-no-tab-cooldown.json" \
+    CODEX_NOTIFY_PARENT_PROCESS_TREE='/usr/bin/zsh' \
+    bash adapters/codex/notify.sh \
+    '{"type":"agent-turn-complete","cwd":"/tmp/review","last-assistant-message":"done"}'
+)"
+assert_eq "$(field "$codex_no_tab_output" voice_text)" "Codex" "Codex no-tab voice text"
+
 opencode_output="$(
   env NOTIFY_TEST_MODE=1 \
     OPENCODE_NOTIFY_LOG="$TMP_DIR/opencode.log" \
@@ -188,6 +212,8 @@ assert "Run full notification preview" in html
 assert "notification sound, start sound, spoken text, and end sound" in html
 assert "preview-grid" in html
 assert "Agentic Coding Notify" in html
+assert "Speak terminal tab title" in html
+assert "speak_tab_title" in html
 assert 'data-combo="voices"' in html
 assert 'data-combo="sounds"' in html
 assert 'data-combo="services"' in html
@@ -203,6 +229,7 @@ assert "Clear show-off selection" in html
 assert 'role="combobox"' not in html  # set by JS after load
 config = request("/api/config")
 assert config["voice"] == "Zarvox"
+assert config["speak_tab_title"] == "true"
 saved = request("/api/config", config)
 assert saved["ok"] is True
 result = request("/api/test", {
@@ -214,6 +241,18 @@ result = request("/api/test", {
 })
 assert result["ok"] is True, result
 assert "Codex App" in result["stdout"], result
+no_tab = dict(config)
+no_tab["speak_tab_title"] = "false"
+result = request("/api/test", {
+    "config": no_tab,
+    "service": "Codex CLI",
+    "label": "review",
+    "message": "smoke",
+    "dry_run": True,
+})
+assert result["ok"] is True, result
+payload = json.loads(result["stdout"])
+assert payload["voice_text"] == "Codex", payload
 play = request("/api/play-sound", {"field": "notification_sound", "sound": "Basso"})
 assert play["ok"] is True, play
 stop = request("/api/stop-sound", {"field": "notification_sound"})

@@ -41,7 +41,7 @@ No external stylesheets, remote fonts, or remote image assets are loaded.
 
 ### Text templates
 
-The app template, CLI template, override spoken text, and service fields are all typeable/searchable comboboxes.
+The app template, CLI template, override spoken text, and service fields are all typeable/searchable comboboxes. The **Speak terminal tab title** switch controls whether CLI spoken text includes `{label}`; app sessions still speak the app name.
 
 Resolution order:
 

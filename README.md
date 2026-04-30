@@ -79,7 +79,8 @@ It supports:
 - visible confirmation feedback for save, export, dry-run, notification, preset, sample, and show-off actions;
 - hover/focus tooltips on each button and action;
 - export of the current UI state to `agentic-coding-notify-config.json`;
-- disclosure guidance for terminal labels.
+- disclosure guidance for terminal labels;
+- a CLI-only toggle to speak or omit the terminal tab title.
 
 Preferences are saved to:
 
@@ -98,7 +99,8 @@ Default config:
   "end_sound": "Submarine",
   "app_voice_text_template": "{service} App",
   "cli_voice_text_template": "{service} {label}",
-  "voice_text_template": ""
+  "voice_text_template": "",
+  "speak_tab_title": "true"
 }
 ```
 
