@@ -123,7 +123,7 @@ HTML = r"""
     .divider { height: 17px; border-top: 1px solid #817b70; border-bottom: 1px solid rgba(255,255,255,.62); background: linear-gradient(180deg, #c5c1b7, #aaa59a); position: relative; }
     .divider::after { content: ""; position: absolute; left: 50%; top: 1px; width: 72px; height: 13px; transform: translateX(-50%); background: repeating-linear-gradient(90deg, rgba(70,66,58,.52) 0 5px, transparent 5px 9px); }
     .deck { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 22px 26px; }
-    .lower { grid-column: 1 / -1; display: grid; grid-template-columns: 1.1fr 1.1fr .9fr; gap: 24px; }
+    .lower { grid-column: 1 / -1; display: grid; grid-template-columns: .85fr 1.65fr; gap: 24px; }
     .panel {
       position: relative;
       padding: 28px 30px 28px;
@@ -140,7 +140,7 @@ HTML = r"""
     .panel.sounds { --accent-color: var(--green); }
     .panel.text { --accent-color: var(--yellow); }
     .panel.preview-card { --accent-color: var(--blue); }
-    .panel.disclosure { --accent-color: var(--red); }
+
     .panel-title { display: flex; align-items: baseline; gap: 16px; margin: 0 0 20px; font-family: var(--font-mono); }
     .panel-title .idx { color: var(--accent-color, var(--blue)); font-size: 25px; font-weight: 900; }
     .panel-title h2 { margin: 0; font-size: 25px; letter-spacing: -.05em; }
@@ -333,6 +333,36 @@ HTML = r"""
       visibility: visible;
       transform: translate(-50%, 0);
     }
+    .speaker-button[data-tooltip]::before,
+    .stop-top[data-tooltip]::before,
+    .footer .big-button[data-tooltip]:last-of-type::before {
+      left: auto;
+      right: 18px;
+      transform: translateY(4px);
+    }
+    .speaker-button[data-tooltip]::after,
+    .stop-top[data-tooltip]::after,
+    .footer .big-button[data-tooltip]:last-of-type::after {
+      left: auto;
+      right: 0;
+      width: 240px;
+      max-width: min(240px, calc(100vw - 32px));
+      transform: translateY(4px);
+    }
+    .speaker-button[data-tooltip]:hover::before,
+    .speaker-button[data-tooltip]:hover::after,
+    .speaker-button[data-tooltip]:focus-visible::before,
+    .speaker-button[data-tooltip]:focus-visible::after,
+    .stop-top[data-tooltip]:hover::before,
+    .stop-top[data-tooltip]:hover::after,
+    .stop-top[data-tooltip]:focus-visible::before,
+    .stop-top[data-tooltip]:focus-visible::after,
+    .footer .big-button[data-tooltip]:last-of-type:hover::before,
+    .footer .big-button[data-tooltip]:last-of-type:hover::after,
+    .footer .big-button[data-tooltip]:last-of-type:focus-visible::before,
+    .footer .big-button[data-tooltip]:last-of-type:focus-visible::after {
+      transform: translateY(0);
+    }
 	    .icon-button { width: 70px; height: 62px; display: grid; place-items: center; padding: 0; border: 1px solid #827d73; border-radius: 8px; background: linear-gradient(180deg, #f2f0e8, #c8c4ba); color: var(--green); box-shadow: var(--bevel), 4px 4px 0 rgba(74,70,63,.22); }
     .icon-button:hover { transform: translateY(-1px); }
     .icon-button svg { width: 30px; height: 30px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
@@ -341,14 +371,17 @@ HTML = r"""
     .icon-button.is-playing { color: var(--red); }
     .icon-button.is-playing .play-icon { display: none; }
     .icon-button.is-playing .stop-icon { display: block; fill: currentColor; stroke: #6b2b26; }
+    .preview-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(190px, .75fr); gap: 18px; align-items: start; }
     .preview-screen { position: relative; min-height: 204px; padding: 16px 68px 16px 18px; border: 1px solid #8a8479; border-radius: 8px; background-color: rgba(255,255,250,.62); background-image: linear-gradient(rgba(72,68,60,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(72,68,60,.05) 1px, transparent 1px); background-size: 18px 18px; font: 17px var(--font-mono); box-shadow: inset 1px 1px 0 rgba(255,255,255,.82); }
+    .preview-fields { min-width: 0; }
+    .preview-fields label:first-child { margin-top: 0; }
     .preview-row { display: grid; grid-template-columns: 78px minmax(0,1fr); gap: 12px; margin: 3px 0; }
     .preview-row span { color: var(--blue); font-weight: 900; }
     .preview-row.green span { color: var(--green); }
     .preview-row b { font-weight: 500; overflow-wrap: anywhere; }
     .speaker-button { position: absolute; right: 12px; bottom: 10px; width: 54px; height: 44px; border: 1px solid #827d73; border-radius: 6px; background: linear-gradient(180deg, #f3f1e9, #cac6bc); box-shadow: var(--bevel), 2px 2px 0 rgba(74,70,63,.22); color: #302c26; }
-    .info-box { display: grid; grid-template-columns: 52px 1fr; gap: 18px; align-items: start; font: 17px/1.45 var(--font-mono); }
-    .info-icon { width: 50px; height: 46px; display: grid; place-items: center; border: 1px solid #837d72; border-radius: 6px; background: linear-gradient(180deg, #f4f2eb, #cbc7bd); box-shadow: var(--bevel); font: 900 28px var(--font-mono); }
+    .disclosure-line { grid-column: 1 / -1; display: grid; grid-template-columns: 42px 1fr; gap: 14px; align-items: center; margin-top: -4px; padding: 14px 18px; border: 1px solid #837d72; border-left: 8px solid var(--red); border-radius: 10px; background: linear-gradient(180deg, rgba(255,253,247,.78), rgba(226,222,212,.76)); box-shadow: var(--bevel), 3px 3px 0 rgba(74,70,63,.14); font: 14px/1.45 var(--font-mono); color: #403c35; }
+    .info-icon { width: 38px; height: 34px; display: grid; place-items: center; border: 1px solid #837d72; border-radius: 6px; background: linear-gradient(180deg, #f4f2eb, #cbc7bd); box-shadow: var(--bevel); font: 900 22px var(--font-mono); }
 	    .footer { display: grid; grid-template-columns: 80px repeat(5, minmax(0, 1fr)) 80px; gap: 22px; align-items: center; padding: 30px 28px; border-top: 1px solid #817b70; background: linear-gradient(180deg, #d7d3ca, #c5c0b5); }
 	    .vent { height: 66px; background: repeating-linear-gradient(180deg, #736e65 0 4px, transparent 4px 12px); opacity: .75; border-radius: 6px; }
 	    .big-button { min-width: 0; min-height: 76px; overflow: hidden; padding: 8px 8px; border: 1px solid #827d73; border-radius: 10px; box-shadow: var(--bevel), 5px 5px 0 rgba(74,70,63,.25); font-size: clamp(12px, .95vw, 16px); line-height: 1.08; text-align: center; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--ink); background: linear-gradient(180deg, #f1eee6, #c9c5bb); white-space: normal; }
@@ -411,6 +444,9 @@ HTML = r"""
           "stripes brand brand"
           "status status stop";
       }
+    }
+    @media (max-width: 520px) {
+      .preview-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 430px) {
       .topbar { grid-template-columns: 1fr; grid-template-areas: "stripes" "brand" "status" "stop"; }
@@ -526,33 +562,36 @@ HTML = r"""
 
         <section class="panel preview-card">
           <div class="panel-title"><span class="idx">04</span><h2>Preview</h2></div>
-          <div class="preview-screen">
-            <div class="preview-row"><span>VOICE :</span><b id="previewVoice"></b></div>
-            <div class="preview-row"><span>RATE :</span><b id="previewRate"></b></div>
-            <div class="preview-row green"><span>NOTIF:</span><b id="previewNotification"></b></div>
-            <div class="preview-row green"><span>START:</span><b id="previewStart"></b></div>
-            <div class="preview-row green"><span>END :</span><b id="previewEnd"></b></div>
-            <div class="preview-row"><span>TEXT :</span><b id="spokenPreview"></b></div>
-            <div class="preview-row"><span>SERVICE:</span><b id="previewService"></b></div>
-            <div class="preview-row"><span>TAB :</span><b id="previewTab"></b></div>
-	            <button class="speaker-button" title="Play voice preview" aria-label="Play voice sample from preview" data-tooltip="Play the current spoken preview using the selected voice and rate." onclick="playVoice()">🔊</button>
+          <div class="preview-grid">
+            <div>
+              <div class="preview-screen">
+                <div class="preview-row"><span>VOICE :</span><b id="previewVoice"></b></div>
+                <div class="preview-row"><span>RATE :</span><b id="previewRate"></b></div>
+                <div class="preview-row green"><span>NOTIF:</span><b id="previewNotification"></b></div>
+                <div class="preview-row green"><span>START:</span><b id="previewStart"></b></div>
+                <div class="preview-row green"><span>END :</span><b id="previewEnd"></b></div>
+                <div class="preview-row"><span>TEXT :</span><b id="spokenPreview"></b></div>
+                <div class="preview-row"><span>SERVICE:</span><b id="previewService"></b></div>
+                <div class="preview-row"><span>TAB :</span><b id="previewTab"></b></div>
+                <button class="speaker-button" title="Run full notification preview" aria-label="Run full notification preview" data-tooltip="Run the full notification flow: notification sound, start sound, spoken text, and end sound." onclick="testNotify(false)">🔔</button>
+              </div>
+              <p class="hint" id="soundPreview"></p>
+            </div>
+            <div class="preview-fields">
+              <label for="service">Service <span class="subtle">(type to search)</span></label>
+	            <div class="search-field combo-field" data-combo="services"><input id="service" class="combo-input" autocomplete="off" value="Claude App" placeholder="Type to filter services" /><div class="combo-list" role="listbox"></div></div>
+              <label for="label">CLI tab label</label>
+              <input id="label" value="review" />
+              <label for="message">Notification message</label>
+              <textarea id="message">Teste do agentic-coding-notify</textarea>
+            </div>
           </div>
-          <p class="hint" id="soundPreview"></p>
-          <label for="service">Service <span class="subtle">(type to search)</span></label>
-	          <div class="search-field combo-field" data-combo="services"><input id="service" class="combo-input" autocomplete="off" value="Claude App" placeholder="Type to filter services" /><div class="combo-list" role="listbox"></div></div>
-          <label for="label">CLI tab label</label>
-          <input id="label" value="review" />
-          <label for="message">Notification message</label>
-          <textarea id="message">Teste do agentic-coding-notify</textarea>
         </section>
 
-        <section class="panel disclosure">
-          <div class="panel-title"><span class="idx">05</span><h2>Disclosure</h2></div>
-          <div class="info-box">
-            <div class="info-icon">i</div>
-            <p>Apps do not need terminal labels.<br><br>CLI sessions can use short tab labels like <code>One</code>, <code>Two</code>, or <code>Three</code>; the plugin already detects the service.</p>
-          </div>
-        </section>
+        <aside class="disclosure-line" aria-label="Terminal label disclosure">
+          <div class="info-icon">i</div>
+          <p>Apps do not need terminal labels. CLI sessions can use short tab labels like <code>One</code>, <code>Two</code>, or <code>Three</code>; the plugin already detects the service.</p>
+        </aside>
       </div>
     </div>
 

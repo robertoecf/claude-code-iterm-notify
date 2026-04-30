@@ -170,7 +170,8 @@ def request(path, payload=None):
     return json.loads(urllib.request.urlopen(req, timeout=3).read())
 
 html = urllib.request.urlopen("http://127.0.0.1:18765/", timeout=3).read().decode()
-assert "Disclosure" in html
+assert "Disclosure" not in html
+assert "Terminal label disclosure" in html
 assert "JetBrains Mono" in html
 assert "Apps do not need terminal labels" in html
 assert "color-scheme: light" in html
@@ -183,6 +184,9 @@ assert "toast-panel" in html
 assert "button-label" in html
 assert html.count("data-tooltip=") >= 10
 assert "Run the selected adapter in NOTIFY_TEST_MODE" in html
+assert "Run full notification preview" in html
+assert "notification sound, start sound, spoken text, and end sound" in html
+assert "preview-grid" in html
 assert "Agentic Coding Notify" in html
 assert 'data-combo="voices"' in html
 assert 'data-combo="sounds"' in html
