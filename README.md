@@ -1,60 +1,85 @@
 # agentic-coding-notify
 
-macOS notifications with sound and voice alerts for agent CLIs.
+<p align="center">
+  <img src="docs/assets/n64-header.svg" alt="agentic-coding-notify retro N64 header" width="100%">
+</p>
 
-The repository still ships the original **Claude Code plugin**, and now also includes dedicated adapters for **Codex**, **OpenCode**, and **Pi**. They live in one repo, but each environment keeps its own entrypoint and installation flow.
+macOS notification preferences for local agent apps and CLIs.
 
-The Claude plugin name remains `claude-code-notify` for compatibility with existing installs.
+This repo ships one shared notification layer with four entrypoints:
 
-## Adapters
+- **Claude Code** through the backwards-compatible `claude-code-notify` plugin.
+- **Codex** through the `notify = [...]` hook in `~/.codex/config.toml`.
+- **OpenCode** through a dedicated adapter script.
+- **Pi** through a dedicated adapter script.
 
-| Adapter | Entry point | Installation model |
-|---|---|---|
-| Claude Code | `hooks/scripts/notify.sh` | Claude plugin |
-| Codex | `adapters/codex/notify.sh` | `~/.codex/config.toml` `notify` command |
-| OpenCode | `adapters/opencode/notify.sh` | adapter install script |
-| Pi | `adapters/pi/notify.sh` | adapter install script |
+The repo name is `agentic-coding-notify`; the Claude plugin name intentionally remains `claude-code-notify` so existing Claude installs keep working.
 
-## What you get
+## Quick start
 
-When the adapter fires, you get:
-
-1. Desktop notification via `terminal-notifier` (with `Submarine` sound) when available
-2. Audio alert with `Basso`
-3. Voice announcement with the session label
-
-The spoken label is environment-specific. For Codex, the voice says `Codex terminou em {label}` (or `Codex App terminou` for the Codex macOS App). For Claude, the existing `Claude Code {label}` behavior is preserved unless you override it in the local preferences UI.
-
-## Requirements
-
-- macOS
-- `afplay`
-- `say`
-- `osascript`
-- [`terminal-notifier`](https://github.com/julienXX/terminal-notifier)
+Install the macOS notification dependency:
 
 ```bash
 brew install terminal-notifier
 ```
 
-## Local preferences UI
-
-Run the local web UI:
+Run the local preferences UI:
 
 ```bash
 python3 web/notify_ui.py --open
 ```
 
-Then use `http://127.0.0.1:8765` to choose. The UI is a light-mode-only retro console panel with an N64 gray-first palette, top status/stop controls, beveled cards, and bottom action buttons; numeric/status values use JetBrains Mono when available, with system fallbacks. It does not import external CSS or art assets.
+Open `http://127.0.0.1:8765`, choose the voice/sounds/text templates, test samples, then save or export the config.
 
-- spoken text templates for app and CLI contexts
-- searchable macOS `say` voice, with a Play/Stop sample that says `Agentic Coding Notify`
-- `say -r` speech rate
-- searchable notification sound
-- searchable start and end sounds played with `afplay`
-- sound samples: changing a sound field plays a sample automatically, and voice/sound fields each have a single Play/Stop toggle control
-- searchable list fields for voice, sounds, and service
-- disclosure guidance: app sessions do not need terminal labels; CLI sessions can use short tab/profile labels like `One`, `Two`, or `Three` because the adapter already detects the service
+Install the adapter you use:
+
+| Environment | Install path | Details |
+|---|---|---|
+| Claude Code | `claude plugin install claude-code-notify@agentic-coding-notify` | [docs/adapters.md#claude-code](docs/adapters.md#claude-code) |
+| Codex | `bash adapters/codex/install.sh --print-config` | [docs/adapters.md#codex](docs/adapters.md#codex) |
+| OpenCode | `bash adapters/opencode/install.sh` | [docs/adapters.md#opencode](docs/adapters.md#opencode) |
+| Pi | `bash adapters/pi/install.sh` | [docs/adapters.md#pi](docs/adapters.md#pi) |
+
+## What it does
+
+When an adapter fires, you get:
+
+1. a desktop notification via `terminal-notifier` when available;
+2. a configurable notification sound;
+3. an optional start sound;
+4. a short spoken label using macOS `say`;
+5. an optional end sound.
+
+The spoken text is context-aware:
+
+- app sessions can say just the app name, e.g. `Codex App`;
+- CLI sessions can combine the service plus a short tab/profile label, e.g. `Codex One`;
+- Codex App is detected explicitly and speaks as `Codex App`, not a truncated CLI label.
+
+## Local preferences UI
+
+
+<p align="center">
+  <img src="docs/assets/web-ui-n64-wide.png" alt="agentic-coding-notify local web UI with retro N64 gray panels" width="100%">
+</p>
+
+The local web UI is light-mode-only and uses a retro N64-gray console-panel style. It is self-contained: no external CSS, no external icon packs, and no remote assets.
+
+It supports:
+
+- searchable, scrollable comboboxes for voices, sounds, templates, and service names;
+- type-to-filter fields that still show the full option list when focused;
+- combobox show-off modes: cycle every option once, or enter `SHOW OFF SELECTION`, pick values, then cycle only those values once;
+- an `×` clear control for show-off selections;
+- one-button Play/Stop sample toggles for voice and every sound field;
+- automatic sample playback when changing voice or sound selections;
+- a standard voice sample phrase: `Agentic Coding Notify`;
+- speech-rate tuning with `say -r` words per minute;
+- a live preview for service, tab label, text, voice, and sounds;
+- visible confirmation feedback for save, export, dry-run, notification, preset, sample, and show-off actions;
+- hover/focus tooltips on each button and action;
+- export of the current UI state to `agentic-coding-notify-config.json`;
+- disclosure guidance for terminal labels.
 
 Preferences are saved to:
 
@@ -62,7 +87,7 @@ Preferences are saved to:
 ~/.agentic-coding-notify/config.json
 ```
 
-The UI defaults to the older classic style:
+Default config:
 
 ```json
 {
@@ -72,193 +97,69 @@ The UI defaults to the older classic style:
   "start_sound": "Basso",
   "end_sound": "Submarine",
   "app_voice_text_template": "{service} App",
-  "cli_voice_text_template": "{service} {label}"
+  "cli_voice_text_template": "{service} {label}",
+  "voice_text_template": ""
 }
 ```
 
-Supported template placeholders:
+Template placeholders:
 
-- `{service}`: `Claude`, `Codex`, `OpenCode`, or `Pi`
-- `{label}`: app label or CLI tab/profile/cwd label
-- `{voice_label}`: adapter-computed fallback text
-- `{message}`: notification message preview
-- `{context}`: `app` or `cli`
+| Placeholder | Meaning |
+|---|---|
+| `{service}` | `Claude`, `Codex`, `OpenCode`, or `Pi` |
+| `{label}` | app label, terminal tab/profile name, or cwd fallback |
+| `{voice_label}` | adapter-computed fallback spoken text |
+| `{message}` | notification message preview |
+| `{context}` | `app` or `cli` |
 
-## Claude Code
+More UI details: [docs/web-ui.md](docs/web-ui.md).
 
-The Claude adapter stays backward-compatible with the existing plugin layout.
+### Running and stopping the UI
 
-### Install
-
-From a local directory:
-
-```bash
-claude plugin marketplace add /path/to/agentic-coding-notify
-claude plugin install claude-code-notify@agentic-coding-notify
-```
-
-From GitHub:
+Run in the foreground:
 
 ```bash
-claude plugin marketplace add robertoecf/agentic-coding-notify
-claude plugin install claude-code-notify@agentic-coding-notify
+python3 web/notify_ui.py --host 127.0.0.1 --port 8765
 ```
 
-Restart Claude Code after installing or updating. Claude loads hooks at session start.
-
-### Claude hooks
-
-The plugin registers two `Notification` hooks:
-
-- `permission_prompt`
-- `idle_prompt`
-
-Both still call `hooks/scripts/notify.sh`. That path is now a shim that delegates to `adapters/claude/notify.sh`, so older setups do not break.
-
-### Claude test
+Or run and open the browser automatically:
 
 ```bash
-echo '{"message":"test","title":"Claude Code"}' | bash hooks/scripts/notify.sh
+python3 web/notify_ui.py --open
 ```
 
-## Codex
-
-Codex does not use the Claude plugin system. The supported integration point is the `notify` command in `~/.codex/config.toml`.
-
-### Install script only
-
-Copy the adapter to your Codex bin directory:
+Stop a foreground server with `Ctrl-C`. If a background server is listening on the default port:
 
 ```bash
-bash adapters/codex/install.sh --install-script ~/.codex/bin/codex-notify.sh
+lsof -tiTCP:8765 -sTCP:LISTEN | xargs kill
 ```
 
-### Print the config snippet
+Check whether it is still running:
 
 ```bash
-bash adapters/codex/install.sh --print-config ~/.codex/bin/codex-notify.sh
+lsof -iTCP:8765 -sTCP:LISTEN -n -P
 ```
 
-Expected output:
-
-```toml
-notify = ["/Users/you/.codex/bin/codex-notify.sh"]
-```
-
-Then add that line to `~/.codex/config.toml`.
-
-### Codex self-test
-
-Run the adapter in dry-run mode:
-
-```bash
-bash adapters/codex/install.sh --self-test ~/.codex/bin/codex-notify.sh
-```
-
-Or invoke the repository script directly:
-
-```bash
-NOTIFY_TEST_MODE=1 bash adapters/codex/notify.sh \
-  '{"type":"agent-turn-complete","cwd":"/tmp/example","last-assistant-message":"notifier pronto"}'
-```
-
-### What the Codex adapter does (and what it cannot do)
-
-Codex exposes exactly one event to the `notify` hook: `agent-turn-complete`. Approval requests, input requests, exec-approval, and patch-approval events all travel on different channels and never reach this script — see [openai/codex#11808](https://github.com/openai/codex/issues/11808) and [protocol source](https://github.com/openai/codex/blob/main/codex-rs/protocol/src/protocol.rs).
-
-So the adapter is deliberately minimal:
-
-- On every `agent-turn-complete`, it fires a short voice announcement `Codex terminou em <label>` (or `Codex terminou no app` for the Codex macOS App).
-- The desktop notification shows the first ~160 characters of the last assistant message as a preview.
-- Identical events within 30 s (same label+message) are suppressed via a cooldown file.
-- The adapter does **not** read the assistant response aloud — that was the source of noise. Glance at the notification or the terminal/app for the actual content.
-
-### Getting alerts for approval / input (not `notify`)
-
-Because Codex does not send those signals to the `notify` hook, use the right layer for each environment:
-
-**Codex macOS App** — enable approval-request notifications in the app preferences. The app delivers them natively through macOS notifications.
-
-**Codex CLI (TUI)** — add to `~/.codex/config.toml`:
-
-```toml
-[tui]
-notifications = ["agent-turn-complete", "approval-requested"]
-notification_method = "osc9"
-```
-
-The terminal (iTerm2, Ghostty, Terminal.app) then emits native desktop notifications via OSC 9 when Codex asks for approval. See [Advanced configuration](https://developers.openai.com/codex/config-advanced).
-
-**Fully custom behavior** — the only way to react to every `EventMsg` in the adapter itself is to consume Codex as an MCP server (`codex mcp`) instead of via the one-shot `notify` hook. That is out of scope for this repo today.
-
-### Tunables
-
-| Environment variable | Default | Purpose |
-|---|---|---|
-| `AGENTIC_CODING_NOTIFY_CONFIG` | `~/.agentic-coding-notify/config.json` | Shared voice/sound preferences file |
-| `CODEX_NOTIFY_LOG` | `/tmp/codex-notify-debug.log` | Debug log path |
-| `CODEX_NOTIFY_COOLDOWN_FILE` | `/tmp/codex-notify-last.json` | Dedup state file |
-| `CODEX_NOTIFY_COOLDOWN_SECONDS` | `30` | Window for suppressing identical events |
-| `CODEX_NOTIFY_PREVIEW_CHARS` | `160` | Desktop notification preview length |
-
-### Session label strategy
-
-The Codex adapter resolves the label in this order:
-
-1. iTerm2 profile name when `ITERM_SESSION_ID` is available
-2. Codex App process ancestry when the script is launched from the macOS app
-3. normalized terminal name from `TERM_PROGRAM`
-4. basename of the `cwd` in the Codex payload
-5. `Codex`
-
-This keeps multiple tabs distinguishable without hardcoding agent names into the voice message.
-
-### Supported Codex environments
-
-The adapter now resolves these environments explicitly:
-
-- `Ghostty` → `Ghostty`
-- `iTerm2` → profile name when available, otherwise `iTerm2`
-- `Apple_Terminal` → `Terminal.app`
-- `vscode` → `VS Code`
-- Codex macOS App process tree → `Codex App`
-
-## iTerm2 multi-session setup
-
-If you run multiple Claude or Codex sessions in iTerm2, create named profiles such as `1`, `2`, `api`, or `review`.
-
-When a session needs attention, the voice will use the profile name when it can be resolved. That is the cleanest way to identify parallel sessions.
-
-Tip: use short terminal tab/profile names such as `One`, `Two`, or `Three`. The adapter already identifies the CLI service (`Claude`, `Codex`, `OpenCode`, `Pi`), so the tab/profile name only needs to identify the session.
+On this Mac the local Python UI process measured about 18 MB RSS while serving the page. Voice and sound option lists are cached after the first `/api/options` request to avoid repeated macOS scans.
 
 ## Repository layout
 
 ```text
 .
-├── adapters
-│   ├── claude
-│   │   └── notify.sh
-│   ├── codex
-│   │   ├── install.sh
-│   │   └── notify.sh
-│   ├── opencode
-│   │   ├── install.sh
-│   │   └── notify.sh
-│   └── pi
-│       ├── install.sh
-│       └── notify.sh
-├── hooks
-│   ├── hooks.json
-│   └── scripts
-│       └── notify.sh
-├── lib
-│   └── notify-config.sh
-├── tests
-│   ├── codex_notify_test.sh
-│   └── plugin_smoke_test.sh
-└── web
-    └── notify_ui.py
+├── .claude-plugin/          # Claude marketplace/plugin metadata
+├── adapters/                # One adapter per host environment
+│   ├── claude/
+│   ├── codex/
+│   ├── opencode/
+│   └── pi/
+├── docs/                    # User, adapter, and troubleshooting docs
+├── hooks/                   # Backwards-compatible Claude hook shim
+├── lib/                     # Shared config and audio helpers
+├── tests/                   # Smoke/regression tests
+└── web/                     # Local preferences UI
 ```
+
+Ignored local workspace artifacts such as `.agents/`, `.claude/`, `skills-lock.json`, logs, and old debug notes are not part of the shipped plugin.
 
 ## Development
 
@@ -268,29 +169,35 @@ Run the full smoke suite:
 ./tests/plugin_smoke_test.sh
 ```
 
-Run only the Codex adapter regression test:
+Run only the Codex adapter regression suite:
 
 ```bash
 ./tests/codex_notify_test.sh
 ```
 
+Validate the Claude plugin manifest:
+
+```bash
+claude plugin validate .
+```
+
+Static checks used for this repo:
+
+```bash
+python3 -m py_compile web/notify_ui.py
+python3 -m json.tool .claude-plugin/plugin.json >/dev/null
+python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
+git diff --check
+```
+
 ## Troubleshooting
 
-### Claude plugin stopped firing
+See [docs/troubleshooting.md](docs/troubleshooting.md) for common issues, including:
 
-- Restart Claude Code
-- Check `~/.claude/settings.json` for invalid configuration
-- Test `hooks/scripts/notify.sh` manually
-
-### Codex notifications are generic
-
-- Confirm `notify` in `~/.codex/config.toml` points to the right script
-- Confirm the script receives the payload as an argument
-- Use `NOTIFY_TEST_MODE=1` to inspect parsed output without sending desktop notifications
-
-### Codex does not expose the same events as Claude
-
-That is expected. Codex `notify` is configured through `config.toml`, and the current documented external notification event is `agent-turn-complete`. This repository keeps adapters separate so each environment can use the signals it actually exposes.
+- Claude Desktop sandbox behavior and why `terminal-notifier` is preferred;
+- Codex `notify` limitations;
+- generic Codex labels;
+- the local web UI port already being in use.
 
 ## License
 

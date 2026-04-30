@@ -177,10 +177,26 @@ assert "color-scheme: light" in html
 assert "N64 gray palette" in html
 assert "READY" in html
 assert "Stop all" in html
+assert "Export Config" in html
+assert "agentic-coding-notify-config.json" in html
+assert "toast-panel" in html
+assert "button-label" in html
+assert html.count("data-tooltip=") >= 10
+assert "Run the selected adapter in NOTIFY_TEST_MODE" in html
 assert "Agentic Coding Notify" in html
-assert 'list="voice_options"' in html
-assert 'list="sound_options"' in html
-assert 'list="service_options"' in html
+assert 'data-combo="voices"' in html
+assert 'data-combo="sounds"' in html
+assert 'data-combo="services"' in html
+assert 'data-combo="templates"' in html
+assert 'class="combo-list" role="listbox"' in html
+assert "Show off one-by-one" in html
+assert "Stop show-off" in html
+assert "SHOW OFF SELECTION" in html
+assert "Selecting: pick values" in html
+assert "Cycle selected" in html
+assert "Stop selected cycle" in html
+assert "Clear show-off selection" in html
+assert 'role="combobox"' not in html  # set by JS after load
 config = request("/api/config")
 assert config["voice"] == "Zarvox"
 saved = request("/api/config", config)
