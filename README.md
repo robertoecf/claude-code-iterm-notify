@@ -111,7 +111,7 @@ Template placeholders:
 | `{service}` | `Claude`, `Codex`, `OpenCode`, or `Pi` |
 | `{label}` | app label, terminal tab/profile name, or cwd fallback |
 | `{voice_label}` | adapter-computed fallback spoken text |
-| `{message}` | notification message preview |
+| `{message}` | agent message preview used in tests/templates |
 | `{context}` | `app` or `cli` |
 
 More UI details: [docs/web-ui.md](docs/web-ui.md).

@@ -595,7 +595,7 @@ HTML = r"""
                 <div class="preview-row"><span>TEXT :</span><b id="spokenPreview"></b></div>
                 <div class="preview-row"><span>SERVICE:</span><b id="previewService"></b></div>
                 <div class="preview-row"><span>TAB :</span><b id="previewTab"></b></div>
-                <button class="speaker-button" title="Run full notification preview" aria-label="Run full notification preview" data-tooltip="Run the full notification flow: notification sound, start sound, spoken text, and end sound." onclick="testNotify(false)">🔔</button>
+                <button class="speaker-button" title="Run full alert preview" aria-label="Run full alert preview" data-tooltip="Run the full alert flow: alert sound, start sound, spoken text, and end sound." onclick="testNotify(false)">🔔</button>
               </div>
               <p class="hint" id="soundPreview"></p>
             </div>
@@ -604,8 +604,6 @@ HTML = r"""
 	            <div class="search-field combo-field" data-combo="services"><input id="service" class="combo-input" autocomplete="off" value="Claude App" placeholder="Type to filter services" /><div class="combo-list" role="listbox"></div></div>
               <label for="label">CLI tab label</label>
               <input id="label" value="review" />
-              <label for="message">Notification message</label>
-              <textarea id="message">Teste do agentic-coding-notify</textarea>
             </div>
           </div>
         </section>
@@ -623,7 +621,7 @@ HTML = r"""
 		      <button class="big-button primary" onclick="saveConfig()" title="Save config" aria-label="Save config" data-tooltip="Save these preferences to ~/.agentic-coding-notify/config.json."><span class="button-icon">💾</span><span class="button-label">Save Config</span></button>
 		      <button class="big-button" onclick="exportConfig()" title="Export config" aria-label="Export config" data-tooltip="Download the current preferences as JSON without changing the saved file."><span class="button-icon">⤓</span><span class="button-label">Export Config</span></button>
 		      <button class="big-button" onclick="testNotify(true)" title="Dry-run JSON" aria-label="Dry-run JSON" data-tooltip="Run the selected adapter in NOTIFY_TEST_MODE and show the parsed JSON only."><span class="button-icon">{}</span><span class="button-label">Dry-run JSON</span></button>
-		      <button class="big-button success" onclick="testNotify(false)" title="Send real notification" aria-label="Send real notification" data-tooltip="Send a real local macOS notification with the current settings."><span class="button-icon">🔔</span><span class="button-label">Real Notification</span></button>
+		      <button class="big-button success" onclick="testNotify(false)" title="Send local alert" aria-label="Send local alert" data-tooltip="Run the selected adapter with the current settings, including local alert sound and speech."><span class="button-icon">🔔</span><span class="button-label">Local Alert</span></button>
 		      <button class="big-button preset" onclick="applyClassicPreset()" title="Apply classic preset" aria-label="Apply classic preset" data-tooltip="Restore the classic Zarvox, Basso, and Submarine defaults in the UI."><span class="button-icon">☆</span><span class="button-label">Classic Preset</span></button>
 	      <div class="vent"></div>
 	    </footer>
@@ -1038,7 +1036,7 @@ function computeSpokenPreview() {
     label: spokenLabel,
     context: parts.context,
     voice_label: fallback || parts.service,
-    message: $("message").value
+    message: ""
   });
 }
 function setPreviewText(id, value) {
@@ -1092,8 +1090,8 @@ function exportConfig() {
   status({ exported: true, filename, config });
 }
 async function testNotify(dryRun) {
-  status(dryRun ? "Running dry-run JSON…" : "Sending real notification…");
-  const body = { config: currentConfig(), service: $("service").value, label: $("label").value, message: $("message").value, dry_run: dryRun };
+  status(dryRun ? "Running dry-run JSON…" : "Sending local alert…");
+  const body = { config: currentConfig(), service: $("service").value, label: $("label").value, dry_run: dryRun };
   const res = await fetch("/api/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
   status(await res.json());
 }
@@ -1170,7 +1168,7 @@ function setSoundPlaying(field, playing) {
     sampleTimers[field] = setTimeout(() => setSoundPlaying(field, false), 2500);
   }
 }
-for (const id of [...fields, "service", "label", "message"]) {
+for (const id of [...fields, "service", "label"]) {
   document.addEventListener("input", (event) => {
     if (event.target && event.target.id === id) {
       if (id === "rate") updateRateLabel();

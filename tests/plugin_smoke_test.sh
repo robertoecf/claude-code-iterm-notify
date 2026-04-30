@@ -208,10 +208,11 @@ assert "toast-panel" in html
 assert "button-label" in html
 assert html.count("data-tooltip=") >= 10
 assert "Run the selected adapter in NOTIFY_TEST_MODE" in html
-assert "Run full notification preview" in html
-assert "notification sound, start sound, spoken text, and end sound" in html
+assert "Run full alert preview" in html
+assert "alert sound, start sound, spoken text, and end sound" in html
 assert "preview-grid" in html
 assert "Agentic Coding Notify" in html
+assert "Agent message preview" not in html
 assert "Speak terminal tab title" in html
 assert "speak_tab_title" in html
 assert 'data-combo="voices"' in html
@@ -236,7 +237,6 @@ result = request("/api/test", {
     "config": config,
     "service": "Codex App",
     "label": "review",
-    "message": "smoke",
     "dry_run": True,
 })
 assert result["ok"] is True, result
@@ -247,7 +247,6 @@ result = request("/api/test", {
     "config": no_tab,
     "service": "Codex CLI",
     "label": "review",
-    "message": "smoke",
     "dry_run": True,
 })
 assert result["ok"] is True, result

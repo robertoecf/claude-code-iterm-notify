@@ -16,7 +16,7 @@ The UI is a local, self-contained web page inspired by the N64 gray hardware pal
 - beveled console shell;
 - colored N64-style stripes;
 - large panel cards for voice, sounds, text, preview, and disclosure;
-- bottom console buttons for save, export, dry-run, real notification, and preset actions;
+- bottom console buttons for save, export, dry-run, local alert, and preset actions;
 - hover/focus tooltips on every action button explaining what each function does;
 - JetBrains Mono for numeric/status/terminal-like values, with system monospace fallbacks.
 
@@ -57,7 +57,7 @@ Supported placeholders:
 | `{service}` | service name, e.g. `Claude`, `Codex`, `OpenCode`, `Pi` |
 | `{label}` | app label, terminal tab/profile name, or cwd fallback |
 | `{voice_label}` | adapter-computed fallback text |
-| `{message}` | notification message preview |
+| `{message}` | agent message preview used in tests/templates |
 | `{context}` | `app` or `cli` |
 
 ### Preview and tests
@@ -65,7 +65,7 @@ Supported placeholders:
 - Every action button includes a hover/focus tooltip and writes visible confirmation feedback to the bottom status panel.
 - **Export Config** downloads the current UI preferences as `agentic-coding-notify-config.json`.
 - **Dry-run JSON** runs the selected adapter with `NOTIFY_TEST_MODE=1` and returns the parsed payload.
-- **Real Notification** runs the selected adapter without dry-run mode.
+- **Local Alert** runs the selected adapter without dry-run mode.
 - **Classic Preset** restores the original voice/sound defaults.
 - **Stop all samples** terminates active voice/sound sample processes started by the UI.
 
@@ -90,7 +90,7 @@ The UI server exposes local-only JSON endpoints:
 | `GET /api/options` | list macOS voices and system sounds |
 | `GET /api/config` | load saved preferences |
 | `POST /api/config` | save preferences |
-| `POST /api/test` | run an adapter dry-run or real notification test |
+| `POST /api/test` | run an adapter dry-run or local alert test |
 | `POST /api/play-sound` | play a sound sample |
 | `POST /api/stop-sound` | stop one sound sample or all samples |
 | `POST /api/play-voice` | play the voice sample |
