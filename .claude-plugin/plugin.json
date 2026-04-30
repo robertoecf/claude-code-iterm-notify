@@ -1,6 +1,6 @@
 {
   "name": "claude-code-notify",
-  "version": "2.3.6",
+  "version": "2.3.7",
   "description": "macOS desktop notifications with sound and voice alerts for Claude Code. This repo also ships dedicated adapters for Codex, OpenCode, and Pi.",
   "author": {
     "name": "Roberto",
@@ -8,5 +8,14 @@
   },
   "repository": "https://github.com/robertoecf/agentic-coding-notify",
   "license": "MIT",
-  "keywords": ["notification", "macos", "iterm2", "sound", "alert", "desktop", "claude-app", "codex"]
+  "keywords": [
+    "notification",
+    "macos",
+    "iterm2",
+    "sound",
+    "alert",
+    "desktop",
+    "claude-app",
+    "codex"
+  ]
 }
